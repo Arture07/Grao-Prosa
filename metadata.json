@@ -1,0 +1,6 @@
+{
+  "name": "Café Journal & Estoque",
+  "description": "Gerenciador de Estoque de Grãos de Café, Diário de Degustação, Cronômetro de Extração e Radar de Cafeterias",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
