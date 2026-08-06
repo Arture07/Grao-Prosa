@@ -12,6 +12,8 @@ interface RadarMapaInteractiveProps {
   onSelectCafeteria: (cafeteria: Cafeteria) => void;
   statusPermissao: string;
   onSolicitarPermissao: () => void;
+  filtroProdutividade?: boolean;
+  onToggleProdutividade?: () => void;
 }
 
 export const RadarMapaInteractive: React.FC<RadarMapaInteractiveProps> = ({
@@ -21,7 +23,9 @@ export const RadarMapaInteractive: React.FC<RadarMapaInteractiveProps> = ({
   selectedCafeteria,
   onSelectCafeteria,
   statusPermissao,
-  onSolicitarPermissao
+  onSolicitarPermissao,
+  filtroProdutividade = false,
+  onToggleProdutividade
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -133,21 +137,27 @@ export const RadarMapaInteractive: React.FC<RadarMapaInteractiveProps> = ({
         // Marcador individual de Cafeteria
         const cafeteria = feature.properties.cafeteria;
         const isSelected = selectedCafeteria?.id === cafeteria.id;
+        const temProdutividade = cafeteria.temWifi || cafeteria.temTomadas;
+        const temNotaValida = cafeteria.nota !== null && cafeteria.nota !== undefined && cafeteria.nota > 0;
 
         const markerHtml = `
           <div class="group relative cursor-pointer transform transition-transform hover:scale-110 ${isSelected ? 'scale-125 z-50' : ''}">
             <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full shadow-lg border-2 ${
               isSelected 
                 ? 'bg-[#3B2314] text-white border-amber-400' 
-                : 'bg-white text-[#1A1A1A] border-[#3B2314]'
+                : temProdutividade
+                ? 'bg-[#7B1E27] text-white border-amber-300 font-bold'
+                : 'bg-[#1A1A1A] text-white border-[#3B2314]'
             }">
-              <span class="w-2 h-2 rounded-full ${cafeteria.temWifi ? 'bg-emerald-500' : 'bg-amber-500'}"></span>
+              <span class="w-2 h-2 rounded-full ${temProdutividade ? 'bg-amber-300' : 'bg-amber-500'}"></span>
               <span class="text-xs font-bold font-serif whitespace-nowrap">${cafeteria.nome}</span>
-              <span class="text-[10px] font-extrabold px-1 rounded bg-amber-400 text-[#1A1A1A] flex items-center gap-0.5">
-                ★ ${cafeteria.nota !== null && cafeteria.nota !== undefined ? cafeteria.nota.toFixed(1) : 'OSM'}
-              </span>
+              ${
+                temNotaValida 
+                  ? `<span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 flex items-center gap-0.5">★ ${cafeteria.nota!.toFixed(1)}</span>`
+                  : ''
+              }
             </div>
-            <div class="w-2 h-2 bg-[#3B2314] rotate-45 mx-auto -mt-1 shadow-md"></div>
+            <div class="w-2 h-2 ${isSelected ? 'bg-[#3B2314]' : temProdutividade ? 'bg-[#7B1E27]' : 'bg-[#1A1A1A]'} rotate-45 mx-auto -mt-1 shadow-md"></div>
           </div>
         `;
 
@@ -303,12 +313,12 @@ export const RadarMapaInteractive: React.FC<RadarMapaInteractiveProps> = ({
           {statusPermissao === 'granted' ? (
             <>
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="font-semibold text-[#1A1A1A]">GPS Ativo (Foreground)</span>
+              <span className="font-semibold text-[#1A1A1A]">GPS Ativo</span>
             </>
           ) : statusPermissao === 'denied' ? (
             <>
               <AlertCircle className="w-4 h-4 text-amber-600" />
-              <span className="font-semibold text-amber-900">GPS Negado (Usando Padrão)</span>
+              <span className="font-semibold text-amber-900">GPS Negado</span>
               <button 
                 onClick={onSolicitarPermissao}
                 className="ml-1 text-[11px] underline text-[#3B2314] font-bold hover:text-black cursor-pointer"
@@ -330,6 +340,25 @@ export const RadarMapaInteractive: React.FC<RadarMapaInteractiveProps> = ({
           )}
         </div>
 
+        {/* Filtro Rápido - Espaço Produtividade */}
+        {onToggleProdutividade && (
+          <button
+            onClick={onToggleProdutividade}
+            className={`pointer-events-auto flex items-center gap-2 px-3.5 py-1.5 rounded-full font-bold text-xs shadow-md border transition-all active:scale-95 cursor-pointer ${
+              filtroProdutividade
+                ? 'bg-[#7B1E27] text-white border-[#7B1E27] ring-2 ring-[#7B1E27]/30'
+                : 'bg-white/95 text-[#7B1E27] border-[#7B1E27]/30 hover:bg-[#7B1E27]/5'
+            }`}
+            title="Exibir apenas cafeterias com Wi-Fi ou Tomadas"
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+            <span>Focar / Trabalhar</span>
+            {filtroProdutividade && (
+              <span className="ml-0.5 w-2 h-2 rounded-full bg-amber-300 animate-ping"></span>
+            )}
+          </button>
+        )}
+
         {/* Botão para Centralizar no Usuário */}
         <button
           onClick={handleCentralizarUsuario}
@@ -350,17 +379,17 @@ export const RadarMapaInteractive: React.FC<RadarMapaInteractiveProps> = ({
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-4 h-4 rounded-full bg-[#3B2314] text-white border border-amber-400 font-bold text-[9px] flex items-center justify-center">☕</span>
-            <span className="text-[#1A1A1A]/90 font-bold">Cluster (Raio 15km)</span>
+            <span className="text-[#1A1A1A]/90 font-bold">Grupo de Cafés</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-[#3B2314] border-2 border-amber-400 shadow-xs"></span>
-            <span className="text-[#1A1A1A]/80 font-medium">Cafeteria Individual</span>
+            <span className="w-3 h-3 rounded-full bg-[#1A1A1A] border-2 border-[#3B2314] shadow-xs"></span>
+            <span className="text-[#1A1A1A]/80 font-medium">Café Especial</span>
           </div>
-          <div className="flex items-center gap-1 text-emerald-700 font-medium">
-            <Wifi className="w-3 h-3" /> Wi-Fi
-          </div>
-          <div className="flex items-center gap-1 text-amber-700 font-medium">
-            <Zap className="w-3 h-3" /> Tomadas
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-[#7B1E27] border-2 border-amber-300 shadow-xs"></span>
+            <span className="text-[#7B1E27] font-bold flex items-center gap-1">
+              Wi-Fi / Tomadas
+            </span>
           </div>
         </div>
       </div>

@@ -60,11 +60,8 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="bg-[#F5F2ED] text-[#1A1A1A] border-b border-[#1A1A1A] pt-6 pb-2 sticky top-0 z-30 shadow-xs">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
         {/* Top Header Section */}
-        <div className="flex items-end justify-between border-b border-[#1A1A1A]/15 pb-4">
+        <div className="flex items-center justify-between border-b border-[#1A1A1A]/15 pb-4">
           <div className="cursor-pointer" onClick={() => setActiveTab('despensa')}>
-            <p className="font-sans text-[10px] tracking-[0.3em] uppercase opacity-60 mb-1.5">
-              Coffee Architect / v1.0.4 • React Native
-            </p>
             <div className="flex items-center gap-3">
               <GraoEProsaLogoIcon className="w-10 h-10 sm:w-12 sm:h-12 shrink-0" />
               <div>
@@ -78,31 +75,24 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          <div className="flex flex-col items-end gap-2">
-            <div className="hidden sm:block text-right">
-              <p className="font-sans text-[10px] font-bold tracking-wider uppercase opacity-60">PERSISTÊNCIA LOCAL</p>
-              <p className="font-serif text-base italic text-[#5A4033]">SQLite / AsyncStorage Active</p>
-            </div>
-
-            {/* Quick Action Buttons */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={onOpenNovoGrao}
-                className="px-3 py-1.5 bg-[#1A1A1A] hover:bg-[#333] text-[#F5F2ED] font-sans text-xs uppercase tracking-widest font-medium rounded-none transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <PlusCircle className="w-3.5 h-3.5" />
-                Novo Grão
-              </button>
-              
-              <button
-                onClick={onResetDatabase}
-                title="Resetar Dados para Valores de Semente (Seed)"
-                className="px-2.5 py-1.5 bg-transparent hover:bg-black/5 text-[#1A1A1A] font-sans text-xs uppercase tracking-wider stamped-border transition-all flex items-center gap-1 cursor-pointer"
-              >
-                <RefreshCw className="w-3 h-3" />
-                Reset
-              </button>
-            </div>
+          {/* Quick Action Buttons */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onOpenNovoGrao}
+              className="px-3 py-1.5 bg-[#1A1A1A] hover:bg-[#333] text-[#F5F2ED] font-sans text-xs uppercase tracking-widest font-medium rounded-none transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              Novo Grão
+            </button>
+            
+            <button
+              onClick={onResetDatabase}
+              title="Resetar Dados para Valores de Semente (Seed)"
+              className="px-2.5 py-1.5 bg-transparent hover:bg-black/5 text-[#1A1A1A] font-sans text-xs uppercase tracking-wider stamped-border transition-all flex items-center gap-1 cursor-pointer"
+            >
+              <RefreshCw className="w-3 h-3" />
+              Reset
+            </button>
           </div>
         </div>
 

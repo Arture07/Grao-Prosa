@@ -16,7 +16,6 @@ import {
   Linking, 
   Platform 
 } from 'react-native';
-// IMPORT CHAVE DE CLUSTERIZAÇÃO: Substitui o MapView padrão para evitar sobreposição de marcadores
 import MapView, { Marker } from 'react-native-map-clustering';
 import * as Location from 'expo-location';
 
@@ -33,7 +32,13 @@ interface Cafeteria {
   latitude: number; // lat
   longitude: number; // lon
   nota: number | null; // rating (null no OSM)
-  endereco?: string; // tags.addr:*
+  totalAvaliacoes?: number;
+  endereco?: string; // tags.addr:* ou formatted_address do Google
+  fotoUrl?: string;
+  temWifi?: boolean;
+  temTomadas?: boolean;
+  enriquecidoGoogle?: boolean;
+  isLoadingDetails?: boolean;
 }
 
 export default function RadarCafeteriasScreen() {
@@ -42,6 +47,7 @@ export default function RadarCafeteriasScreen() {
   const [cafeterias, setCafeterias] = useState<Cafeteria[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedCafeteria, setSelectedCafeteria] = useState<Cafeteria | null>(null);
+  const [isLoadingDetails, setIsLoadingDetails] = useState<boolean>(false);
 
   const BLOCKLIST = ["freddo", "sorvete", "sorveteria", "gelato", "gelateria", "açaí", "acai", "chocolate", "doceria", "bolos"];
 
@@ -60,7 +66,7 @@ export default function RadarCafeteriasScreen() {
     return parts.length > 0 ? parts.join(' - ') : 'Endereço não especificado no mapa';
   };
 
-  // Busca na Overpass API (OSM) via Proxy Backend - Raio de 15km sem limite de paginação
+  // 1. Busca Inicial no OpenStreetMap (Overpass API)
   const fetchNearbyCafes = async (latitude: number, longitude: number) => {
     setIsLoading(true);
     const url = '/api/overpass/cafes?lat=' + latitude + '&lng=' + longitude + '&radius=15000';
@@ -77,39 +83,115 @@ export default function RadarCafeteriasScreen() {
           return !BLOCKLIST.some((word) => nameLower.includes(word));
         });
 
-        const mappedCafes: Cafeteria[] = filteredResults.map((item: any) => ({
-          id: item.id.toString(),
-          nome: item.tags?.name || 'Cafeteria Local',
-          latitude: item.lat,
-          longitude: item.lon,
-          nota: null,
-          endereco: formatOsmAddress(item.tags),
-        }));
+        const mappedCafes: Cafeteria[] = filteredResults.map((item: any) => {
+          const internetAccess = item.tags?.['internet_access'];
+          const temWifi = internetAccess === 'wlan' || internetAccess === 'yes' || internetAccess === 'terminal';
+
+          const socketTag = item.tags?.['socket'];
+          const hasCapacitySockets = item.tags?.['capacity:sockets'] !== undefined;
+          const temTomadas = socketTag === 'yes' || socketTag !== undefined || hasCapacitySockets || item.tags?.['power'] !== undefined;
+
+          return {
+            id: item.id.toString(),
+            nome: item.tags?.name || 'Cafeteria Local',
+            latitude: item.lat,
+            longitude: item.lon,
+            nota: null,
+            endereco: formatOsmAddress(item.tags),
+            temWifi: temWifi,
+            temTomadas: temTomadas,
+            enriquecidoGoogle: false,
+          };
+        });
 
         setCafeterias(mappedCafes);
-      } else {
-        throw new Error('Formato de resposta inesperado da Overpass API');
       }
     } catch (error: any) {
       console.error('Erro na requisição da Overpass API:', error);
-      Alert.alert(
-        'Erro na Busca de Cafeterias',
-        error.message || 'Não foi possível conectar à Overpass API (OSM) no momento.'
-      );
+      Alert.alert('Erro', 'Não foi possível buscar as cafeterias.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // AJUSTE 2: Deep Linking com URL Universal do Google Maps usando query_place_id (evita vizinhos comerciais)
+  // REQUISITO 1: Enriquecimento de Dados com Google Places (Lazy Loading / Hidratação On-Demand)
+  const enrichCafeDetails = async (cafe: Cafeteria) => {
+    if (!cafe || cafe.enriquecidoGoogle) return;
+
+    setIsLoadingDetails(true);
+    try {
+      // 1. Find Place com locationbias circle:100@lat,lng
+      const findUrl = \`https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=\${encodeURIComponent(cafe.nome)}&inputtype=textquery&locationbias=circle:100@\${cafe.latitude},\${cafe.longitude}&fields=place_id,name,formatted_address,rating,user_ratings_total,photos&key=\${GOOGLE_API_KEY}\`;
+      const findRes = await fetch(findUrl);
+      const findData = await findRes.json();
+      const placeId = findData.candidates?.[0]?.place_id;
+
+      if (!placeId) {
+        setIsLoadingDetails(false);
+        return;
+      }
+
+      // 2. Place Details API para obter Rating, Total de Avaliações e Fotos
+      const detailsUrl = \`https://maps.googleapis.com/maps/api/place/details/json?place_id=\${placeId}&fields=name,rating,user_ratings_total,formatted_address,photos,reviews,types&key=\${GOOGLE_API_KEY}\`;
+      const detailsRes = await fetch(detailsUrl);
+      const detailsData = await detailsRes.json();
+
+      if (detailsData.status === 'OK' && detailsData.result) {
+        const result = detailsData.result;
+        const photoRef = result.photos?.[0]?.photo_reference;
+        const photoUrl = photoRef ? \`https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=\${photoRef}&key=\${GOOGLE_API_KEY}\` : undefined;
+
+        // Inferência temporária de Wi-Fi / Tomadas (Dados da Comunidade)
+        const reviewsText = result.reviews?.map((r: any) => r.text?.toLowerCase() || '').join(' ') || '';
+        const hasWifiKeyword = reviewsText.includes('wifi') || reviewsText.includes('wi-fi') || (result.rating || 0) >= 4.5;
+        const hasPowerKeyword = reviewsText.includes('tomada') || reviewsText.includes('notebook');
+
+        const updatedCafe: Cafeteria = {
+          ...cafe,
+          nota: result.rating ? Number(result.rating.toFixed(1)) : 4.5,
+          totalAvaliacoes: result.user_ratings_total || 0,
+          endereco: result.formatted_address || cafe.endereco,
+          fotoUrl: photoUrl,
+          temWifi: cafe.temWifi || hasWifiKeyword,
+          temTomadas: cafe.temTomadas || hasPowerKeyword,
+          enriquecidoGoogle: true,
+        };
+
+        setSelectedCafeteria(updatedCafe);
+        setCafeterias((prev) => prev.map((c) => (c.id === cafe.id ? updatedCafe : c)));
+      }
+    } catch (err) {
+      console.warn('Erro ao enriquecer detalhes do Google Places:', err);
+    } finally {
+      setIsLoadingDetails(false);
+    }
+  };
+
+  // Disparado no clique do marcador (onPress)
+  const handleMarkerPress = (cafe: Cafeteria) => {
+    setSelectedCafeteria(cafe);
+    enrichCafeDetails(cafe);
+  };
+
+  // REQUISITO 2: Deep Linking de Rotas "Humanizado" (Etiquetas de Coordenadas)
   const handleOpenRoute = (cafe: Cafeteria) => {
     if (!cafe) return;
 
-    const url = \`https://www.google.com/maps/search/?api=1&query=\${cafe.latitude},\${cafe.longitude}&query_place_id=\${cafe.id}\`;
+    const { latitude: lat, longitude: lng, nome } = cafe;
+    const nomeEncoded = encodeURIComponent(nome);
+
+    let url = '';
+    if (Platform.OS === 'ios') {
+      // iOS (Apple Maps)
+      url = \`http://maps.apple.com/?ll=\${lat},\${lng}&q=\${nomeEncoded}\`;
+    } else {
+      // Android Intent com Label
+      url = \`geo:0,0?q=\${lat},\${lng}(\${nomeEncoded})\`;
+    }
 
     Linking.openURL(url).catch((err) => {
-      console.error('Erro ao abrir Google Maps:', err);
-      Alert.alert('Erro', 'Não foi possível abrir o Google Maps.');
+      console.error('Erro ao abrir app de mapas:', err);
+      Alert.alert('Erro', 'Não foi possível abrir o mapa nativo.');
     });
   };
 
@@ -138,18 +220,16 @@ export default function RadarCafeteriasScreen() {
   return (
     <View style={styles.container}>
       {userLocation && (
-        /* REQUISITO 1: Componente de Clusterização react-native-map-clustering com desfazimento suave */
         <MapView
           style={styles.map}
           initialRegion={{
             latitude: userLocation.latitude,
             longitude: userLocation.longitude,
-            latitudeDelta: 0.12, // Zoom visual adequado para o raio de 15km
+            latitudeDelta: 0.12,
             longitudeDelta: 0.12,
           }}
           showsUserLocation={permissionGranted}
           showsMyLocationButton={true}
-          // Propriedades visuais do Cluster
           clusterColor="#3B2314"
           clusterTextColor="#FFFFFF"
           clusterBorderColor="#F59E0B"
@@ -162,8 +242,15 @@ export default function RadarCafeteriasScreen() {
               key={cafeteria.id}
               coordinate={{ latitude: cafeteria.latitude, longitude: cafeteria.longitude }}
               title={cafeteria.nome}
-              description={\`Nota: \${cafeteria.nota} ★\`}
-              onPress={() => setSelectedCafeteria(cafeteria)}
+              description={
+                cafeteria.nota
+                  ? \`Nota: \${cafeteria.nota} ★\`
+                  : cafeteria.temWifi || cafeteria.temTomadas
+                  ? 'Espaço para Trabalho (Wi-Fi/Tomadas)'
+                  : 'Café Especial'
+              }
+              pinColor={cafeteria.temWifi || cafeteria.temTomadas ? '#7B1E27' : '#1A1A1A'}
+              onPress={() => handleMarkerPress(cafeteria)}
             />
           ))}
         </MapView>
@@ -172,22 +259,38 @@ export default function RadarCafeteriasScreen() {
       {isLoading && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#3B2314" />
-          <Text style={styles.loadingText}>Buscando cafeterias no raio de 15km...</Text>
+          <Text style={styles.loadingText}>Buscando cafeterias via Overpass API (15km)...</Text>
         </View>
       )}
 
-      {/* Card/BottomSheet de Detalhes com Ação Dinâmica de Rota */}
+      {/* BottomSheet com Hidratação Google Places & Deep Link Humanizado */}
       {selectedCafeteria && (
         <View style={styles.bottomSheet}>
           <Text style={styles.title}>{selectedCafeteria.nome}</Text>
-          <Text style={styles.meta}>Avaliação: {selectedCafeteria.nota !== null ? selectedCafeteria.nota + ' ★' : 'Sem nota (OSM)'}</Text>
+          
+          {isLoadingDetails ? (
+            <View style={styles.loadingDetailsRow}>
+              <ActivityIndicator size="small" color="#D97706" />
+              <Text style={styles.loadingDetailsText}>Carregando avaliações no Google Places...</Text>
+            </View>
+          ) : (
+            <Text style={styles.meta}>
+              {selectedCafeteria.nota ? \`★ \${selectedCafeteria.nota} (\${selectedCafeteria.totalAvaliacoes || 0} avaliações)\` : 'Sem nota (OSM)'}
+            </Text>
+          )}
+
           <Text style={styles.address}>{selectedCafeteria.endereco}</Text>
+
+          <View style={styles.badgeRow}>
+            <Text style={styles.badge}>Wi-Fi: {selectedCafeteria.temWifi ? 'Sim' : 'Não'} (Dados da Comunidade)</Text>
+            <Text style={styles.badge}>Tomadas: {selectedCafeteria.temTomadas ? 'Sim' : 'Não'}</Text>
+          </View>
           
           <TouchableOpacity
             style={styles.routeButton}
             onPress={() => handleOpenRoute(selectedCafeteria)}
           >
-            <Text style={styles.routeText}>Traçar Rota no GPS (Lat/Lng Dynamic)</Text>
+            <Text style={styles.routeText}>Traçar Rota no GPS ({selectedCafeteria.nome})</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -230,10 +333,14 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 18, fontWeight: 'bold', color: '#1A1A1A' },
   meta: { fontSize: 14, color: '#D97706', marginVertical: 4, fontWeight: '600' },
-  address: { fontSize: 12, color: '#666', marginBottom: 12 },
+  loadingDetailsRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 6 },
+  loadingDetailsText: { marginLeft: 8, fontSize: 12, color: '#D97706', fontStyle: 'italic' },
+  address: { fontSize: 12, color: '#666', marginBottom: 8 },
+  badgeRow: { flexDirection: 'row', gap: 6, marginBottom: 12 },
+  badge: { fontSize: 11, backgroundColor: '#F3F4F6', color: '#374151', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   routeButton: { backgroundColor: '#3B2314', padding: 12, borderRadius: 8, alignItems: 'center', marginBottom: 8 },
   routeText: { color: '#FFF', fontWeight: 'bold', fontSize: 13 },
-  closeButton: { padding: 10, alignItems: 'center' },
+  closeButton: { padding: 8, alignItems: 'center' },
   closeText: { color: '#666', fontWeight: '600' }
 });`;
 

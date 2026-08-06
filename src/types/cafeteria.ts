@@ -21,6 +21,9 @@ export interface Cafeteria {
   origemGooglePlaces?: boolean;
   origemOSM?: boolean;
   openNow?: boolean;
+  isLoadingDetails?: boolean;
+  enriquecidoGoogle?: boolean;
+  dadosComunidade?: boolean;
 }
 
 /**

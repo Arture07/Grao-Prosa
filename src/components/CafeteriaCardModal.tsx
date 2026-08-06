@@ -11,9 +11,12 @@ import {
   Navigation, 
   CheckCircle2, 
   XCircle,
-  Share2
+  Loader2,
+  Info,
+  Sparkles
 } from 'lucide-react';
 import { Cafeteria } from '../types/cafeteria';
+import { handleOpenRoute as openRouteAction } from '../hooks/useCafeterias';
 
 interface CafeteriaCardModalProps {
   cafeteria: Cafeteria | null;
@@ -28,18 +31,8 @@ export const CafeteriaCardModal: React.FC<CafeteriaCardModalProps> = ({
 }) => {
   if (!cafeteria) return null;
 
-  /**
-   * AJUSTE 2: Correção do Deep Linking (Evita pino em vizinhos comerciais)
-   * Utiliza a URL Universal do Google Maps passando obrigatoriamente o query_place_id
-   */
   const handleOpenRoute = () => {
-    if (!cafeteria) return;
-
-    const url = `https://www.google.com/maps/search/?api=1&query=${cafeteria.latitude},${cafeteria.longitude}&query_place_id=${cafeteria.id}`;
-
-    if (typeof window !== 'undefined') {
-      window.open(url, '_blank');
-    }
+    openRouteAction(cafeteria);
   };
 
   return (
@@ -61,31 +54,62 @@ export const CafeteriaCardModal: React.FC<CafeteriaCardModalProps> = ({
             <div className="w-12 h-1.5 bg-[#1A1A1A]/15 rounded-full" />
           </div>
 
+          {/* Photo Header (If Enriched) */}
+          {cafeteria.fotoUrl && (
+            <div className="relative h-44 w-full bg-slate-100 overflow-hidden">
+              <img 
+                src={cafeteria.fotoUrl} 
+                alt={cafeteria.nome}
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              <div className="absolute bottom-3 left-4 right-4 text-white">
+                <h3 className="text-lg font-bold font-serif leading-snug">{cafeteria.nome}</h3>
+              </div>
+            </div>
+          )}
+
           {/* Header & Title */}
           <div className="p-5 pb-3 border-b border-[#1A1A1A]/10 flex items-start justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#3B2314] text-white">
-                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                  {cafeteria.nota !== null && cafeteria.nota !== undefined ? `${cafeteria.nota.toFixed(1)} / 5.0` : 'Sem nota (OSM)'}
-                </span>
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                {/* Omissão Inteligente: Só exibe nota se existir valor real */}
+                {cafeteria.nota !== null && cafeteria.nota !== undefined && cafeteria.nota > 0 && (
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#3B2314] text-white">
+                    <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                    {cafeteria.nota.toFixed(1)}
+                  </span>
+                )}
+
+                {cafeteria.nota !== null && cafeteria.nota !== undefined && cafeteria.nota > 0 && cafeteria.totalAvaliacoes !== undefined && cafeteria.totalAvaliacoes > 0 && (
+                  <span className="text-xs font-medium text-[#1A1A1A]/60">
+                    ({cafeteria.totalAvaliacoes} avaliações)
+                  </span>
+                )}
 
                 {cafeteria.distanciaKm !== undefined && (
                   <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#1A1A1A]/5 text-[#1A1A1A]">
                     <Navigation className="w-3 h-3 text-[#5A4033]" />
                     {cafeteria.distanciaKm < 1 
                       ? `${Math.round(cafeteria.distanciaKm * 1000)}m de você`
-                      : `${cafeteria.distanciaKm} km de você`
+                      : `${cafeteria.distanciaKm} km`
                     }
                   </span>
                 )}
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-[#1A1A1A] font-serif tracking-tight">
-                {cafeteria.nome}
-              </h2>
-              <p className="text-xs sm:text-sm text-[#1A1A1A]/70 flex items-center gap-1 mt-0.5">
+
+              {!cafeteria.fotoUrl && (
+                <h2 className="text-xl sm:text-2xl font-bold text-[#1A1A1A] font-serif tracking-tight">
+                  {cafeteria.nome}
+                </h2>
+              )}
+
+              <p className="text-xs sm:text-sm text-[#1A1A1A]/70 flex items-center gap-1 mt-1">
                 <MapPin className="w-3.5 h-3.5 text-[#5A4033] shrink-0" />
-                {cafeteria.endereco}
+                {cafeteria.endereco && cafeteria.endereco !== 'Endereço não especificado no mapa'
+                  ? cafeteria.endereco 
+                  : (cafeteria.bairro || 'Localização no Mapa')}
               </p>
             </div>
 
@@ -98,73 +122,56 @@ export const CafeteriaCardModal: React.FC<CafeteriaCardModalProps> = ({
             </button>
           </div>
 
+          {/* Loading Indicator for On-Demand Hydration */}
+          {cafeteria.isLoadingDetails && (
+            <div className="p-4 bg-amber-50/80 border-b border-amber-200/60 flex items-center gap-3 text-amber-900 text-xs font-medium">
+              <Loader2 className="w-4 h-4 animate-spin text-amber-700 shrink-0" />
+              <span>Buscando fotos e avaliações...</span>
+            </div>
+          )}
+
           {/* Scrollable Content */}
           <div className="p-5 space-y-5 overflow-y-auto">
-            {/* Attributes Grid (Wi-Fi e Tomadas para Produtividade) */}
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-[#1A1A1A]/50 mb-2">
-                Infraestrutura & Produtividade
-              </h3>
-              <div className="grid grid-cols-2 gap-3">
-                {/* Wi-Fi Status */}
-                <div className={`p-3 rounded-xl border flex items-center gap-3 transition-colors ${
-                  cafeteria.temWifi 
-                    ? 'bg-emerald-50/60 border-emerald-200 text-emerald-900' 
-                    : 'bg-rose-50/60 border-rose-200 text-rose-900'
-                }`}>
-                  <div className={`p-2 rounded-lg ${
-                    cafeteria.temWifi ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
-                  }`}>
-                    <Wifi className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold uppercase tracking-wide">Wi-Fi Grátis</div>
-                    <div className="text-xs flex items-center gap-1 font-medium mt-0.5">
-                      {cafeteria.temWifi ? (
-                        <>
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          Disponível para clientes
-                        </>
-                      ) : (
-                        <>
-                          <XCircle className="w-3.5 h-3.5 text-rose-500" />
-                          Sem rede Wi-Fi
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
+            {/* Attributes Grid (Apenas exibe tags que forem TRUE, sem blocos negativos) */}
+            {(cafeteria.temWifi || cafeteria.temTomadas) ? (
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#1A1A1A]/50 mb-2">
+                  Infraestrutura Disponível
+                </h3>
 
-                {/* Tomadas Status */}
-                <div className={`p-3 rounded-xl border flex items-center gap-3 transition-colors ${
-                  cafeteria.temTomadas 
-                    ? 'bg-emerald-50/60 border-emerald-200 text-emerald-900' 
-                    : 'bg-amber-50/60 border-amber-200 text-amber-900'
-                }`}>
-                  <div className={`p-2 rounded-lg ${
-                    cafeteria.temTomadas ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                  }`}>
-                    <Zap className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold uppercase tracking-wide">Tomadas para Notebook</div>
-                    <div className="text-xs flex items-center gap-1 font-medium mt-0.5">
-                      {cafeteria.temTomadas ? (
-                        <>
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          Várias tomadas nas mesas
-                        </>
-                      ) : (
-                        <>
-                          <XCircle className="w-3.5 h-3.5 text-amber-600" />
-                          Tomadas limitadas
-                        </>
-                      )}
+                <div className="flex flex-wrap gap-3">
+                  {cafeteria.temWifi && (
+                    <div className="p-3 rounded-xl border bg-[#7B1E27]/5 border-[#7B1E27]/20 text-[#7B1E27] flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-[#7B1E27]/10 text-[#7B1E27]">
+                        <Wifi className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold uppercase tracking-wide">Wi-Fi Grátis</div>
+                        <div className="text-xs flex items-center gap-1 font-medium mt-0.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#7B1E27]" />
+                          Rede Disponível
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {cafeteria.temTomadas && (
+                    <div className="p-3 rounded-xl border bg-[#3B2314]/5 border-[#3B2314]/20 text-[#3B2314] flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-[#3B2314]/10 text-[#3B2314]">
+                        <Zap className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold uppercase tracking-wide">Tomadas</div>
+                        <div className="text-xs flex items-center gap-1 font-medium mt-0.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#3B2314]" />
+                          Acesso a Energia
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
+            ) : null}
 
             {/* Descrição */}
             <div>
@@ -208,7 +215,7 @@ export const CafeteriaCardModal: React.FC<CafeteriaCardModalProps> = ({
               className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#3B2314] hover:bg-[#2A180C] text-white font-medium text-sm transition-colors cursor-pointer shadow-xs"
             >
               <Navigation className="w-4 h-4" />
-              Traçar Rota no GPS
+              Traçar Rota no GPS ({cafeteria.nome})
             </button>
 
             {onRegistrarDegustacao && (
@@ -220,7 +227,7 @@ export const CafeteriaCardModal: React.FC<CafeteriaCardModalProps> = ({
                 className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-[#3B2314]/30 hover:bg-[#3B2314]/5 text-[#3B2314] font-semibold text-sm transition-colors cursor-pointer"
               >
                 <Coffee className="w-4 h-4" />
-                Registrar Degustação Aqui
+                Registrar Degustação
               </button>
             )}
           </div>

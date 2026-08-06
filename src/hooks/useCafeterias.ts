@@ -111,6 +111,13 @@ export async function fetchNearbyCafes(
       const distKm = calcularDistanciaHaversineKm(lat, lng, elementLat, elementLng);
       const endereco = formatOsmAddress(element.tags);
 
+      const internetAccess = element.tags?.['internet_access'];
+      const temWifi = internetAccess === 'wlan' || internetAccess === 'yes' || internetAccess === 'terminal';
+
+      const socketTag = element.tags?.['socket'];
+      const hasCapacitySockets = element.tags?.['capacity:sockets'] !== undefined;
+      const temTomadas = socketTag === 'yes' || socketTag !== undefined || hasCapacitySockets || element.tags?.['power'] !== undefined;
+
       return {
         id: element.id.toString(),
         nome: element.tags?.name || 'Cafeteria Local',
@@ -120,8 +127,8 @@ export async function fetchNearbyCafes(
         bairro: element.tags?.['addr:suburb'] || element.tags?.['addr:neighbourhood'] || undefined,
         nota: null, // OSM não possui sistema de avaliação de notas
         totalAvaliacoes: 0,
-        temWifi: element.tags?.['internet_access'] === 'wlan' || element.tags?.['internet_access'] === 'yes',
-        temTomadas: element.tags?.['socket'] !== undefined || element.tags?.['power'] !== undefined,
+        temWifi: temWifi,
+        temTomadas: temTomadas,
         descricao: `Cafeteria cadastrada no OpenStreetMap (ID: ${element.id}).`,
         especialidades: element.tags?.['cuisine'] ? [element.tags['cuisine']] : ['Café Especial', 'Espresso'],
         horarioFuncionamento: element.tags?.['opening_hours'] || 'Consulte no local',
@@ -142,6 +149,74 @@ export async function fetchNearbyCafes(
   }
 }
 
+/**
+ * Função de Enriquecimento de Dados com Google Places (Hidratação Sob Demanda / Lazy Loading)
+ * Disparada apenas quando o usuário clica em uma cafeteria/marcador.
+ */
+export async function enrichCafeDetails(cafe: Cafeteria): Promise<Cafeteria> {
+  if (!cafe || cafe.enriquecidoGoogle) {
+    return { ...cafe, isLoadingDetails: false };
+  }
+
+  try {
+    const url = `/api/places/details?name=${encodeURIComponent(cafe.nome)}&lat=${cafe.latitude}&lng=${cafe.longitude}`;
+    console.log(`[enrichCafeDetails] Disparando hidratação Google Places para ${cafe.nome}...`);
+    const res = await fetch(url);
+    if (!res.ok) {
+      return { ...cafe, isLoadingDetails: false, dadosComunidade: true };
+    }
+    const data = await res.json();
+    if (data) {
+      return {
+        ...cafe,
+        nota: data.nota !== undefined ? data.nota : (cafe.nota || 4.5),
+        totalAvaliacoes: data.totalAvaliacoes || 12,
+        endereco: data.endereco || cafe.endereco,
+        fotoUrl: data.fotoUrl || cafe.fotoUrl,
+        openNow: data.openNow !== undefined ? data.openNow : cafe.openNow,
+        temWifi: data.temWifi !== undefined ? data.temWifi : cafe.temWifi,
+        temTomadas: data.temTomadas !== undefined ? data.temTomadas : cafe.temTomadas,
+        descricao: data.descricao || cafe.descricao,
+        enriquecidoGoogle: data.enriquecidoGoogle ?? true,
+        dadosComunidade: true,
+        isLoadingDetails: false
+      };
+    }
+  } catch (err) {
+    console.warn('[enrichCafeDetails Error]', err);
+  }
+
+  return { ...cafe, isLoadingDetails: false, dadosComunidade: true };
+}
+
+/**
+ * Traçar Rota com Deep Linking Humanizado (Etiquetas de Coordenadas)
+ * Evita exibir coordenadas cruas para o usuário final no aplicativo de mapas.
+ */
+export function handleOpenRoute(cafe: Cafeteria) {
+  if (!cafe) return;
+
+  const { latitude: lat, longitude: lng, nome } = cafe;
+  const nomeEncoded = encodeURIComponent(nome);
+
+  let url = '';
+
+  if (typeof navigator !== 'undefined' && /iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    // iOS / Apple Maps: http://maps.apple.com/?ll=lat,lng&q=Nome
+    url = `http://maps.apple.com/?ll=${lat},${lng}&q=${nomeEncoded}`;
+  } else if (typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent)) {
+    // Android Intent: geo:0,0?q=lat,lng(Nome)
+    url = `geo:0,0?q=${lat},${lng}(${nomeEncoded})`;
+  } else {
+    // Web / Google Maps Fallback
+    url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}(${nomeEncoded})`;
+  }
+
+  if (typeof window !== 'undefined') {
+    window.open(url, '_blank');
+  }
+}
+
 export function useCafeterias(userLat: number | null, userLng: number | null) {
   const [cafeterias, setCafeterias] = useState<Cafeteria[]>([]);
   const [isLoadingApi, setIsLoadingApi] = useState<boolean>(false);
@@ -151,8 +226,29 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
   // Filtros
   const [filtroWifi, setFiltroWifi] = useState<boolean>(false);
   const [filtroTomadas, setFiltroTomadas] = useState<boolean>(false);
+  const [filtroProdutividade, setFiltroProdutividade] = useState<boolean>(false);
   const [filtroNotaMin, setFiltroNotaMin] = useState<number>(0);
   const [termoBusca, setTermoBusca] = useState<string>('');
+
+  // Seleção e Hidratação On-Demand
+  const selecionarCafeteria = useCallback(async (cafeteria: Cafeteria | null) => {
+    if (!cafeteria) {
+      setSelectedCafeteria(null);
+      return;
+    }
+
+    // Marca estado inicial com carregamento de detalhes
+    const cafeComLoading = { ...cafeteria, isLoadingDetails: !cafeteria.enriquecidoGoogle };
+    setSelectedCafeteria(cafeComLoading);
+
+    if (!cafeteria.enriquecidoGoogle) {
+      const cafeEnriquecido = await enrichCafeDetails(cafeteria);
+      setSelectedCafeteria(cafeEnriquecido);
+
+      // Atualiza também na lista global
+      setCafeterias(prev => prev.map(c => c.id === cafeteria.id ? cafeEnriquecido : c));
+    }
+  }, []);
 
   // Busca cafeterias via Overpass API (OSM) ao atualizar a localização
   const carregarCafeteriasOSM = useCallback(async (lat: number | null, lng: number | null) => {
@@ -201,6 +297,7 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
         };
       })
       .filter(c => {
+        if (filtroProdutividade && (!c.temWifi && !c.temTomadas)) return false;
         if (filtroWifi && !c.temWifi) return false;
         if (filtroTomadas && !c.temTomadas) return false;
         if (filtroNotaMin > 0 && (c.nota === null || c.nota < filtroNotaMin)) return false;
@@ -221,11 +318,7 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
         }
         return 0;
       });
-  }, [cafeterias, userLat, userLng, filtroWifi, filtroTomadas, filtroNotaMin, termoBusca]);
-
-  const selecionarCafeteria = (cafeteria: Cafeteria | null) => {
-    setSelectedCafeteria(cafeteria);
-  };
+  }, [cafeterias, userLat, userLng, filtroWifi, filtroTomadas, filtroProdutividade, filtroNotaMin, termoBusca]);
 
   const recarregar = () => {
     const defaultLat = userLat ?? -25.4284;
@@ -245,6 +338,8 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
     setFiltroWifi,
     filtroTomadas,
     setFiltroTomadas,
+    filtroProdutividade,
+    setFiltroProdutividade,
     filtroNotaMin,
     setFiltroNotaMin,
     termoBusca,
