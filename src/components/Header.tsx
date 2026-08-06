@@ -8,6 +8,48 @@ interface HeaderProps {
   onResetDatabase: () => void;
 }
 
+export const GraoEProsaLogoIcon: React.FC<{ className?: string }> = ({ className = "w-10 h-10" }) => (
+  <svg viewBox="0 0 110 90" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    {/* Grão de Café - Cinza Carvão Escuro (#1A1A1A) */}
+    <g transform="rotate(-18 40 45)">
+      {/* Contorno do Grão */}
+      <path 
+        d="M18 45 C16 18, 42 8, 56 20 C70 32, 73 64, 56 76 C38 88, 20 76, 18 45 Z" 
+        stroke="#1A1A1A" 
+        strokeWidth="5.5" 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        fill="none" 
+      />
+      {/* S do Centro do Grão */}
+      <path 
+        d="M24 25 C42 32, 32 60, 50 69" 
+        stroke="#1A1A1A" 
+        strokeWidth="4.5" 
+        strokeLinecap="round" 
+        fill="none" 
+      />
+    </g>
+
+    {/* Balão de Fala (Prosa) - Vermelho Profundo / Vinho (#8B1E2D) */}
+    <g transform="translate(42, 22)">
+      {/* Contorno do Balão com Rabicho */}
+      <path 
+        d="M8 18 C8 7, 22 2, 38 2 C54 2, 64 11, 64 22 C64 33, 52 41, 38 41 C34 41, 31 40, 27 39 L16 46 L18 35 C12 31, 8 25, 8 18 Z" 
+        stroke="#8B1E2D" 
+        strokeWidth="4.5" 
+        strokeLinecap="round" 
+        strokeLinejoin="round" 
+        fill="none" 
+      />
+      {/* 3 Pontos da Prosa */}
+      <circle cx="26" cy="20" r="2.8" fill="#8B1E2D" />
+      <circle cx="36" cy="20" r="2.8" fill="#8B1E2D" />
+      <circle cx="46" cy="20" r="2.8" fill="#8B1E2D" />
+    </g>
+  </svg>
+);
+
 export const Header: React.FC<HeaderProps> = ({
   activeTab,
   setActiveTab,
@@ -20,12 +62,20 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Top Header Section */}
         <div className="flex items-end justify-between border-b border-[#1A1A1A]/15 pb-4">
           <div className="cursor-pointer" onClick={() => setActiveTab('despensa')}>
-            <p className="font-sans text-[10px] tracking-[0.3em] uppercase opacity-60 mb-1">
+            <p className="font-sans text-[10px] tracking-[0.3em] uppercase opacity-60 mb-1.5">
               Coffee Architect / v1.0.4 • React Native
             </p>
-            <h1 className="font-serif text-3xl sm:text-5xl italic leading-none font-semibold text-[#1A1A1A]">
-              Curadoria de Grãos
-            </h1>
+            <div className="flex items-center gap-3">
+              <GraoEProsaLogoIcon className="w-10 h-10 sm:w-12 sm:h-12 shrink-0" />
+              <div>
+                <h1 className="font-serif text-2xl sm:text-4xl italic leading-none font-bold text-[#1A1A1A] tracking-tight">
+                  Grão & Prosa
+                </h1>
+                <p className="font-sans text-[9px] uppercase tracking-widest text-[#5A4033] mt-1 font-semibold opacity-80">
+                  Café Especial & Diário Sensorial
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="flex flex-col items-end gap-2">

@@ -1,24 +1,64 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Cafeteria, GooglePlacesResponse, GooglePlacesResult } from '../types/cafeteria';
+import { Cafeteria } from '../types/cafeteria';
 import { calcularDistanciaHaversineKm } from '../data/mockCafeterias';
 
 /**
- * REQUISITO 1, 2 & 3: Função assíncrona fetchNearbyCafes que consome a API do Google Places (Nearby Search)
+ * Auxiliar para construir um endereço amigável a partir das tags do OpenStreetMap (OSM)
+ */
+function formatOsmAddress(tags: Record<string, string> | undefined): string {
+  if (!tags) return 'Endereço não especificado no mapa';
+
+  const parts: string[] = [];
+
+  if (tags['addr:street']) {
+    let street = tags['addr:street'];
+    if (tags['addr:housenumber']) {
+      street += `, ${tags['addr:housenumber']}`;
+    }
+    parts.push(street);
+  }
+
+  if (tags['addr:suburb'] || tags['addr:neighbourhood']) {
+    parts.push(tags['addr:suburb'] || tags['addr:neighbourhood']);
+  }
+
+  if (tags['addr:city']) {
+    parts.push(tags['addr:city']);
+  }
+
+  if (parts.length > 0) {
+    return parts.join(' - ');
+  }
+
+  return 'Endereço não especificado no mapa';
+}
+
+/**
+ * Função assíncrona fetchNearbyCafes que utiliza a Overpass API do OpenStreetMap (OSM)
+ * para buscar todas as cafeterias em um raio de 15km em uma única requisição.
  * 
- * - Validação estrita de GPS antes da requisição.
- * - Logs detalhados da URL e resposta da API.
- * - Remoção total de fallbacks de dados mockados (retorno estrito de [] em caso de erro ou vazio).
+ * - Query Overpass QL: [out:json][timeout:25];(node["amenity"="cafe"](around:15000,lat,lng););out center;
+ * - Mapeia json.elements para a estrutura { id, nome, latitude, longitude, endereco, nota: null }.
+ * - Filtro negativo (Blocklist) para remover sorveterias, docerias, açaís e chocolaterias.
  */
 export async function fetchNearbyCafes(
   lat: number | null | undefined,
   lng: number | null | undefined,
   radiusMeters: number = 15000
 ): Promise<Cafeteria[]> {
-  // REQUISITO 3: Validação Estrita do GPS
-  if (lat === null || lat === undefined || lng === null || lng === undefined || isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) {
+  // 1. Validação Estrita do GPS
+  if (
+    lat === null ||
+    lat === undefined ||
+    lng === null ||
+    lng === undefined ||
+    isNaN(lat) ||
+    isNaN(lng) ||
+    (lat === 0 && lng === 0)
+  ) {
     console.warn('[GPS Valid] Coordenadas de GPS nulas ou inválidas:', { lat, lng });
     const gpsMessage = 'Aguardando sinal de GPS...';
-    
+
     if (typeof window !== 'undefined' && window.alert) {
       window.alert(`Alerta de GPS: ${gpsMessage}`);
     }
@@ -27,75 +67,77 @@ export async function fetchNearbyCafes(
 
   console.log(`[GPS Status OK] Latitude: ${lat}, Longitude: ${lng}`);
 
-  const url = `/api/places/nearby?lat=${lat}&lng=${lng}&radius=${radiusMeters}&type=cafe&keyword=coffee`;
+  // Chama o backend proxy local para evitar restrições de CORS/rede no navegador
+  const url = `/api/overpass/cafes?lat=${lat}&lng=${lng}&radius=${radiusMeters}`;
 
-  // REQUISITO 2: Log detalhado antes do fetch
-  console.log(`[Google Places API Call] Disparando requisição ao backend proxy: ${url}`);
+  console.log(`[Overpass API Proxy Call] Disparando requisição ao servidor proxy: ${url}`);
 
   try {
     const response = await fetch(url);
-    
+
     if (!response.ok) {
       const httpMsg = `Erro HTTP ${response.status}: ${response.statusText}`;
-      console.error('[Google Places HTTP Error]', response);
+      console.error('[Overpass API HTTP Error]', response);
       throw new Error(httpMsg);
     }
 
-    const data: GooglePlacesResponse = await response.json();
+    const data = await response.json();
 
-    // REQUISITO 2: Se resposta não for status 'OK', imprime o objeto inteiro no console.error
-    if (data.status !== 'OK') {
-      console.error('[Google Places API Status Error]', {
-        status: data.status,
-        error_message: data.error_message,
-        fullResponse: data
-      });
-      const apiErrorMessage = data.error_message || `Status da API Google Places: ${data.status}`;
-      throw new Error(apiErrorMessage);
+    if (!data || !Array.isArray(data.elements)) {
+      console.warn('[Overpass API] Resposta sem elementos. Retornando array vazio.');
+      return [];
     }
 
-    if (data.results && data.results.length > 0) {
-      console.log(`[Google Places Sucesso] ${data.results.length} cafeterias encontradas.`);
-      
-      // Mapeamento padronizado em português { id, nome, latitude, longitude, endereco, nota }
-      return data.results.map((place: GooglePlacesResult) => {
-        const placeLat = place.geometry.location.lat;
-        const placeLng = place.geometry.location.lng;
-        const distKm = calcularDistanciaHaversineKm(lat, lng, placeLat, placeLng);
+    console.log(`[Overpass API Sucesso] ${data.elements.length} cafeterias brutas encontradas.`);
 
-        return {
-          id: place.place_id,
-          nome: place.name,
-          latitude: placeLat,
-          longitude: placeLng,
-          endereco: place.vicinity || 'Endereço cadastrado no Google Places',
-          nota: place.rating ? Number(place.rating.toFixed(1)) : 4.5,
-          totalAvaliacoes: place.user_ratings_total || 0,
-          temWifi: true,
-          temTomadas: true,
-          descricao: `Cafeteria cadastrada na Google Places API (${place.vicinity || 'Local'}).`,
-          especialidades: ['Café Especial', 'Espresso'],
-          horarioFuncionamento: place.opening_hours?.open_now ? 'Aberto Agora' : 'Consulte no local',
-          distanciaKm: distKm,
-          origemGooglePlaces: true,
-          openNow: place.opening_hours?.open_now
-        };
-      });
-    }
+    // 2. Blocklist para remover estabelecimentos indesejados (sorveterias, docerias, açaís, etc.)
+    const blocklist = [
+      "freddo", "sorvete", "sorveteria", "gelato", "gelateria", "açaí", "acai", "chocolate", "doceria", "bolos"
+    ];
 
-    console.warn('[Google Places API] Nenhum resultado (ZERO_RESULTS). Retornando array vazio.');
-    return [];
+    const elementosFiltrados = data.elements.filter((element: any) => {
+      const nome = element.tags?.name || '';
+      if (!nome) return true; // Mantém com fallback de 'Cafeteria Local'
+      const nomeLower = nome.toLowerCase();
+      return !blocklist.some((item) => nomeLower.includes(item));
+    });
+
+    console.log(`[Blocklist Filtro] ${data.elements.length} locais brutos OSM -> ${elementosFiltrados.length} cafeterias reais após remoção de docerias/sorveterias.`);
+
+    // 3. Mapeamento final para a estrutura do app { id, nome, latitude, longitude, endereco, nota: null }
+    return elementosFiltrados.map((element: any) => {
+      const elementLat = element.lat;
+      const elementLng = element.lon;
+      const distKm = calcularDistanciaHaversineKm(lat, lng, elementLat, elementLng);
+      const endereco = formatOsmAddress(element.tags);
+
+      return {
+        id: element.id.toString(),
+        nome: element.tags?.name || 'Cafeteria Local',
+        latitude: elementLat,
+        longitude: elementLng,
+        endereco: endereco,
+        bairro: element.tags?.['addr:suburb'] || element.tags?.['addr:neighbourhood'] || undefined,
+        nota: null, // OSM não possui sistema de avaliação de notas
+        totalAvaliacoes: 0,
+        temWifi: element.tags?.['internet_access'] === 'wlan' || element.tags?.['internet_access'] === 'yes',
+        temTomadas: element.tags?.['socket'] !== undefined || element.tags?.['power'] !== undefined,
+        descricao: `Cafeteria cadastrada no OpenStreetMap (ID: ${element.id}).`,
+        especialidades: element.tags?.['cuisine'] ? [element.tags['cuisine']] : ['Café Especial', 'Espresso'],
+        horarioFuncionamento: element.tags?.['opening_hours'] || 'Consulte no local',
+        distanciaKm: distKm,
+        origemOSM: true
+      };
+    });
 
   } catch (err: unknown) {
     const errorObj = err instanceof Error ? err : new Error(String(err));
-    console.error('[Google Places API Catch Block]', errorObj);
+    console.error('[Overpass API Catch Block]', errorObj);
 
-    // REQUISITO 2: Alerta explícito no dispositivo/navegador para expor o erro real
     if (typeof window !== 'undefined' && window.alert) {
-      window.alert(`Erro na API: ${errorObj.message}`);
+      window.alert(`Erro na API Overpass: ${errorObj.message}`);
     }
 
-    // REQUISITO 1: REMOÇÃO TOTAL DE FALLBACKS FALSOS - Retorna obrigatoriamente um array vazio []
     return [];
   }
 }
@@ -112,9 +154,8 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
   const [filtroNotaMin, setFiltroNotaMin] = useState<number>(0);
   const [termoBusca, setTermoBusca] = useState<string>('');
 
-  // Busca cafeterias via Google Places API ao atualizar a localização
-  const carregarCafeteriasGooglePlaces = useCallback(async (lat: number | null, lng: number | null) => {
-    // REQUISITO 3: Validação Estrita do GPS antes de chamar a API
+  // Busca cafeterias via Overpass API (OSM) ao atualizar a localização
+  const carregarCafeteriasOSM = useCallback(async (lat: number | null, lng: number | null) => {
     if (lat === null || lat === undefined || lng === null || lng === undefined || isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) {
       console.warn('[GPS Guard] Tentativa de busca abortada. Coordenadas de GPS ausentes/nulas.');
       const gpsMsg = 'Aguardando sinal de GPS...';
@@ -130,9 +171,8 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
       const resultados = await fetchNearbyCafes(lat, lng, 15000);
       setCafeterias(resultados);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erro ao buscar cafeterias na Google Places API.';
+      const msg = err instanceof Error ? err.message : 'Erro ao buscar cafeterias na Overpass API.';
       setErrorApi(msg);
-      // REQUISITO 1: Garantia de estado nulo/vazio [] em caso de falha
       setCafeterias([]);
     } finally {
       setIsLoadingApi(false);
@@ -141,12 +181,11 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
 
   // Efeito disparado quando a latitude ou longitude do GPS muda
   useEffect(() => {
-    // Se userLat ou userLng estiverem disponíveis, busca a localização real do GPS
     const defaultLat = userLat ?? -25.4284;
     const defaultLng = userLng ?? -49.2733;
 
-    carregarCafeteriasGooglePlaces(defaultLat, defaultLng);
-  }, [userLat, userLng, carregarCafeteriasGooglePlaces]);
+    carregarCafeteriasOSM(defaultLat, defaultLng);
+  }, [userLat, userLng, carregarCafeteriasOSM]);
 
   // Cafeterias processadas com filtros
   const cafeteriasFiltradas = useMemo(() => {
@@ -164,7 +203,7 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
       .filter(c => {
         if (filtroWifi && !c.temWifi) return false;
         if (filtroTomadas && !c.temTomadas) return false;
-        if (c.nota < filtroNotaMin) return false;
+        if (filtroNotaMin > 0 && (c.nota === null || c.nota < filtroNotaMin)) return false;
         if (termoBusca.trim()) {
           const buscaLower = termoBusca.toLowerCase();
           const matchNome = c.nome.toLowerCase().includes(buscaLower);
@@ -177,7 +216,10 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
         if (a.distanciaKm !== undefined && b.distanciaKm !== undefined) {
           return a.distanciaKm - b.distanciaKm;
         }
-        return b.nota - a.nota;
+        if (a.nota !== null && b.nota !== null) {
+          return b.nota - a.nota;
+        }
+        return 0;
       });
   }, [cafeterias, userLat, userLng, filtroWifi, filtroTomadas, filtroNotaMin, termoBusca]);
 
@@ -188,7 +230,7 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
   const recarregar = () => {
     const defaultLat = userLat ?? -25.4284;
     const defaultLng = userLng ?? -49.2733;
-    carregarCafeteriasGooglePlaces(defaultLat, defaultLng);
+    carregarCafeteriasOSM(defaultLat, defaultLng);
   };
 
   return {

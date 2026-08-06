@@ -29,29 +29,17 @@ export const CafeteriaCardModal: React.FC<CafeteriaCardModalProps> = ({
   if (!cafeteria) return null;
 
   /**
-   * REQUISITO 2: Correção Absoluta do Deep Linking de Rotas
-   * Utiliza EXCLUSIVAMENTE a Latitude e Longitude do marcador selecionado. NENHUM endereço string no destino.
+   * AJUSTE 2: Correção do Deep Linking (Evita pino em vizinhos comerciais)
+   * Utiliza a URL Universal do Google Maps passando obrigatoriamente o query_place_id
    */
   const handleOpenRoute = () => {
     if (!cafeteria) return;
 
-    const lat = cafeteria.latitude;
-    const lng = cafeteria.longitude;
+    const url = `https://www.google.com/maps/search/?api=1&query=${cafeteria.latitude},${cafeteria.longitude}&query_place_id=${cafeteria.id}`;
 
-    const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
-    const isAndroid = /android/i.test(userAgent);
-    const isIOS = /iPad|iPhone|iPod/.test(userAgent);
-
-    let url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`; // Universal Fallback
-
-    if (isAndroid) {
-      url = `google.navigation:q=${lat},${lng}`;
-    } else if (isIOS) {
-      url = `maps://app?daddr=${lat},${lng}`;
+    if (typeof window !== 'undefined') {
+      window.open(url, '_blank');
     }
-
-    // Tenta abrir deep link ou fallback universal no navegador
-    window.open(url, '_blank');
   };
 
   return (
@@ -79,7 +67,7 @@ export const CafeteriaCardModal: React.FC<CafeteriaCardModalProps> = ({
               <div className="flex items-center gap-2 mb-1">
                 <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#3B2314] text-white">
                   <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                  {cafeteria.nota.toFixed(1)} / 5.0
+                  {cafeteria.nota !== null && cafeteria.nota !== undefined ? `${cafeteria.nota.toFixed(1)} / 5.0` : 'Sem nota (OSM)'}
                 </span>
 
                 {cafeteria.distanciaKm !== undefined && (

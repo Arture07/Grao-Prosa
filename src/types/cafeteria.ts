@@ -3,13 +3,13 @@
  */
 
 export interface Cafeteria {
-  id: string; // Google place_id ou ID customizado
+  id: string; // Google place_id, OSM node id ou ID customizado
   nome: string;
   latitude: number;
   longitude: number;
   temWifi: boolean;
   temTomadas: boolean;
-  nota: number; // 1.0 a 5.0 (rating)
+  nota: number | null; // 1.0 a 5.0 (rating) ou null se OpenStreetMap
   totalAvaliacoes?: number; // user_ratings_total
   endereco: string;
   bairro?: string;
@@ -19,6 +19,7 @@ export interface Cafeteria {
   fotoUrl?: string;
   distanciaKm?: number; // Calculado dinamicamente em relação à localização atual do usuário
   origemGooglePlaces?: boolean;
+  origemOSM?: boolean;
   openNow?: boolean;
 }
 
@@ -51,6 +52,7 @@ export interface GooglePlacesResponse {
   results: GooglePlacesResult[];
   status: string;
   error_message?: string;
+  next_page_token?: string;
 }
 
 export type PermissionStatus = 'undetermined' | 'granted' | 'denied' | 'requesting';

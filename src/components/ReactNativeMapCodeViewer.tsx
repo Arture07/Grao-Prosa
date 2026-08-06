@@ -28,12 +28,12 @@ const FALLBACK_CURITIBA = {
 };
 
 interface Cafeteria {
-  id: string; // place_id
-  nome: string; // name
-  latitude: number; // geometry.location.lat
-  longitude: number; // geometry.location.lng
-  nota: number; // rating
-  endereco?: string; // vicinity
+  id: string; // OSM element id
+  nome: string; // tags.name
+  latitude: number; // lat
+  longitude: number; // lon
+  nota: number | null; // rating (null no OSM)
+  endereco?: string; // tags.addr:*
 }
 
 export default function RadarCafeteriasScreen() {
@@ -41,70 +41,76 @@ export default function RadarCafeteriasScreen() {
   const [permissionGranted, setPermissionGranted] = useState<boolean>(false);
   const [cafeterias, setCafeterias] = useState<Cafeteria[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  // Requisito 3: Estado gerenciado corretamente para alimentar a navegação de rotas
   const [selectedCafeteria, setSelectedCafeteria] = useState<Cafeteria | null>(null);
 
-  // REQUISITO 1: Busca na Google Places API expandida para raio de 15000 metros (15km)
+  const BLOCKLIST = ["freddo", "sorvete", "sorveteria", "gelato", "gelateria", "açaí", "acai", "chocolate", "doceria", "bolos"];
+
+  const formatOsmAddress = (tags: Record<string, string> | undefined): string => {
+    if (!tags) return 'Endereço não especificado no mapa';
+    const parts: string[] = [];
+    if (tags['addr:street']) {
+      let street = tags['addr:street'];
+      if (tags['addr:housenumber']) {
+        street += ', ' + tags['addr:housenumber'];
+      }
+      parts.push(street);
+    }
+    if (tags['addr:suburb'] || tags['addr:neighbourhood']) parts.push(tags['addr:suburb'] || tags['addr:neighbourhood']);
+    if (tags['addr:city']) parts.push(tags['addr:city']);
+    return parts.length > 0 ? parts.join(' - ') : 'Endereço não especificado no mapa';
+  };
+
+  // Busca na Overpass API (OSM) via Proxy Backend - Raio de 15km sem limite de paginação
   const fetchNearbyCafes = async (latitude: number, longitude: number) => {
     setIsLoading(true);
-    const url = \`https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=\${latitude},\${longitude}&radius=15000&type=cafe&keyword=coffee&key=\${GOOGLE_API_KEY}\`;
+    const url = '/api/overpass/cafes?lat=' + latitude + '&lng=' + longitude + '&radius=15000';
 
     try {
       const response = await fetch(url);
       const json = await response.json();
 
-      if (json.status === 'OK' && json.results) {
-        const mappedCafes: Cafeteria[] = json.results.map((item: any) => ({
-          id: item.place_id,
-          nome: item.name,
-          latitude: item.geometry.location.lat,
-          longitude: item.geometry.location.lng,
-          nota: item.rating ? Number(item.rating.toFixed(1)) : 4.5,
-          endereco: item.vicinity || 'Endereço cadastrado no Google Places',
+      if (json && Array.isArray(json.elements)) {
+        const filteredResults = json.elements.filter((item: any) => {
+          const name = item.tags?.name || '';
+          if (!name) return true;
+          const nameLower = name.toLowerCase();
+          return !BLOCKLIST.some((word) => nameLower.includes(word));
+        });
+
+        const mappedCafes: Cafeteria[] = filteredResults.map((item: any) => ({
+          id: item.id.toString(),
+          nome: item.tags?.name || 'Cafeteria Local',
+          latitude: item.lat,
+          longitude: item.lon,
+          nota: null,
+          endereco: formatOsmAddress(item.tags),
         }));
 
         setCafeterias(mappedCafes);
       } else {
-        throw new Error(json.error_message || \`Status da API: \${json.status}\`);
+        throw new Error('Formato de resposta inesperado da Overpass API');
       }
     } catch (error: any) {
-      console.error('Erro na requisição da Google Places API:', error);
+      console.error('Erro na requisição da Overpass API:', error);
       Alert.alert(
         'Erro na Busca de Cafeterias',
-        'Não foi possível conectar à API do Google Places no momento.'
+        error.message || 'Não foi possível conectar à Overpass API (OSM) no momento.'
       );
     } finally {
       setIsLoading(false);
     }
   };
 
-  // REQUISITO 2: Função de Deep Linking dinâmica SEM NENHUM endereço string no destino
+  // AJUSTE 2: Deep Linking com URL Universal do Google Maps usando query_place_id (evita vizinhos comerciais)
   const handleOpenRoute = (cafe: Cafeteria) => {
     if (!cafe) return;
 
-    // Uso EXCLUSIVO de Latitude e Longitude
-    const lat = cafe.latitude;
-    const lng = cafe.longitude;
+    const url = \`https://www.google.com/maps/search/?api=1&query=\${cafe.latitude},\${cafe.longitude}&query_place_id=\${cafe.id}\`;
 
-    let url = \`https://www.google.com/maps/dir/?api=1&destination=\${lat},\${lng}\`; // Universal Fallback
-
-    if (Platform.OS === 'android') {
-      url = \`google.navigation:q=\${lat},\${lng}\`;
-    } else if (Platform.OS === 'ios') {
-      url = \`maps://app?daddr=\${lat},\${lng}\`;
-    }
-
-    Linking.canOpenURL(url)
-      .then((supported) => {
-        if (supported) {
-          Linking.openURL(url);
-        } else {
-          Linking.openURL(\`https://www.google.com/maps/dir/?api=1&destination=\${lat},\${lng}\`);
-        }
-      })
-      .catch(() => {
-        Linking.openURL(\`https://www.google.com/maps/dir/?api=1&destination=\${lat},\${lng}\`);
-      });
+    Linking.openURL(url).catch((err) => {
+      console.error('Erro ao abrir Google Maps:', err);
+      Alert.alert('Erro', 'Não foi possível abrir o Google Maps.');
+    });
   };
 
   useEffect(() => {
@@ -174,7 +180,7 @@ export default function RadarCafeteriasScreen() {
       {selectedCafeteria && (
         <View style={styles.bottomSheet}>
           <Text style={styles.title}>{selectedCafeteria.nome}</Text>
-          <Text style={styles.meta}>Avaliação: {selectedCafeteria.nota} ★</Text>
+          <Text style={styles.meta}>Avaliação: {selectedCafeteria.nota !== null ? selectedCafeteria.nota + ' ★' : 'Sem nota (OSM)'}</Text>
           <Text style={styles.address}>{selectedCafeteria.endereco}</Text>
           
           <TouchableOpacity
@@ -270,7 +276,7 @@ export function RadarMapCLI() {
     setIsLoading(true);
     try {
       const response = await fetch(
-        \`https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=\${lat},\${lng}&radius=15000&type=cafe&keyword=coffee&key=\${GOOGLE_API_KEY}\`
+        \`https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=\${lat},\${lng}&radius=15000&type=cafe&key=\${GOOGLE_API_KEY}\`
       );
       const data = await response.json();
       if (data.status === 'OK') {

@@ -144,7 +144,7 @@ export const RadarMapaInteractive: React.FC<RadarMapaInteractiveProps> = ({
               <span class="w-2 h-2 rounded-full ${cafeteria.temWifi ? 'bg-emerald-500' : 'bg-amber-500'}"></span>
               <span class="text-xs font-bold font-serif whitespace-nowrap">${cafeteria.nome}</span>
               <span class="text-[10px] font-extrabold px-1 rounded bg-amber-400 text-[#1A1A1A] flex items-center gap-0.5">
-                ★ ${cafeteria.nota.toFixed(1)}
+                ★ ${cafeteria.nota !== null && cafeteria.nota !== undefined ? cafeteria.nota.toFixed(1) : 'OSM'}
               </span>
             </div>
             <div class="w-2 h-2 bg-[#3B2314] rotate-45 mx-auto -mt-1 shadow-md"></div>

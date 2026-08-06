@@ -346,7 +346,7 @@ export const RadarCafeteriasView: React.FC<RadarCafeteriasViewProps> = ({
 
                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold shrink-0">
                     <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                    {cafeteria.nota.toFixed(1)}
+                    {cafeteria.nota !== null && cafeteria.nota !== undefined ? cafeteria.nota.toFixed(1) : 'OSM'}
                   </span>
                 </div>
 
