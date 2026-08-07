@@ -1,5 +1,6 @@
 import React from 'react';
-import { Coffee, PlusCircle, BookOpen, RefreshCw, Sparkles, Timer, MapPin } from 'lucide-react';
+import { Coffee, PlusCircle, BookOpen, RefreshCw, Sparkles, Timer, MapPin, LogOut, User as UserIcon } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 interface HeaderProps {
   activeTab: 'despensa' | 'nova-degustacao' | 'diario' | 'cronometro' | 'radar';
@@ -56,11 +57,13 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenNovoGrao,
   onResetDatabase
 }) => {
+  const { user, logout } = useAuth();
+
   return (
-    <header className="bg-[#F5F2ED] text-[#1A1A1A] border-b border-[#1A1A1A] pt-6 pb-2 sticky top-0 z-30 shadow-xs">
+    <header className="bg-[#F5F2ED] text-[#1A1A1A] border-b border-[#1A1A1A] pt-4 sm:pt-6 pb-2 sticky top-0 z-30 shadow-xs">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
         {/* Top Header Section */}
-        <div className="flex items-center justify-between border-b border-[#1A1A1A]/15 pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1A1A1A]/15 pb-4">
           <div className="cursor-pointer" onClick={() => setActiveTab('despensa')}>
             <div className="flex items-center gap-3">
               <GraoEProsaLogoIcon className="w-10 h-10 sm:w-12 sm:h-12 shrink-0" />
@@ -75,14 +78,23 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Quick Action Buttons */}
-          <div className="flex items-center gap-2">
+          {/* Quick Action Buttons & User Profile */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {user && (
+              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-black/5 text-[#1A1A1A] text-xs rounded-full border border-[#1A1A1A]/10 mr-1">
+                <UserIcon className="w-3 h-3 text-[#7B1E27]" />
+                <span className="truncate max-w-[140px] font-medium text-[11px]">
+                  {user.displayName || user.email?.split('@')[0] || 'Usuário'}
+                </span>
+              </div>
+            )}
+
             <button
               onClick={onOpenNovoGrao}
-              className="px-3 py-1.5 bg-[#1A1A1A] hover:bg-[#333] text-[#F5F2ED] font-sans text-xs uppercase tracking-widest font-medium rounded-none transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-3 py-1.5 bg-[#1A1A1A] hover:bg-[#333] text-[#F5F2ED] font-sans text-xs uppercase tracking-widest font-medium rounded-none transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
               <PlusCircle className="w-3.5 h-3.5" />
-              Novo Grão
+              <span className="hidden xs:inline">Novo Grão</span>
             </button>
             
             <button
@@ -91,8 +103,19 @@ export const Header: React.FC<HeaderProps> = ({
               className="px-2.5 py-1.5 bg-transparent hover:bg-black/5 text-[#1A1A1A] font-sans text-xs uppercase tracking-wider stamped-border transition-all flex items-center gap-1 cursor-pointer"
             >
               <RefreshCw className="w-3 h-3" />
-              Reset
+              <span className="hidden md:inline">Reset</span>
             </button>
+
+            {user && (
+              <button
+                onClick={logout}
+                title="Sair da Conta"
+                className="px-2.5 py-1.5 bg-transparent hover:bg-red-50 text-[#7B1E27] font-sans text-xs uppercase tracking-wider border border-[#7B1E27]/30 hover:border-[#7B1E27] transition-all flex items-center gap-1 cursor-pointer rounded-md"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Sair</span>
+              </button>
+            )}
           </div>
         </div>
 

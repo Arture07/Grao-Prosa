@@ -3,6 +3,7 @@ import { Grao, Degustacao } from './types/coffee';
 import { graoRepository } from './repositories/graoRepository';
 import { degustacaoRepository } from './repositories/degustacaoRepository';
 import { dbAdapter } from './database/databaseAdapter';
+import { AuthProvider, useAuth } from './hooks/useAuth';
 
 import { Header } from './components/Header';
 import { DespensaView } from './components/DespensaView';
@@ -11,8 +12,13 @@ import { DiarioView } from './components/DiarioView';
 import { BrewingTimerView } from './components/BrewingTimerView';
 import { RadarCafeteriasView } from './components/RadarCafeteriasView';
 import { GraoFormModal } from './components/GraoFormModal';
+import { LoginScreen } from './components/LoginScreen';
+import { RegisterScreen } from './components/RegisterScreen';
 
-export default function App() {
+function MainApp() {
+  const { user, uid, isLoadingAuth } = useAuth();
+  const [authView, setAuthView] = useState<'login' | 'register'>('login');
+
   const [activeTab, setActiveTab] = useState<'despensa' | 'nova-degustacao' | 'diario' | 'cronometro' | 'radar'>('despensa');
   const [graos, setGraos] = useState<Grao[]>([]);
   const [degustacoes, setDegustacoes] = useState<Degustacao[]>([]);
@@ -31,26 +37,49 @@ export default function App() {
     return acc;
   }, {});
 
-  // Carrega todos os dados do banco local
+  // Carrega todos os dados do banco (Firestore para Grãos + Local/Cloud)
   const carregarDados = useCallback(async () => {
+    if (!uid) return;
     try {
       setIsLoading(true);
       const [listaGraos, listaDegustacoes] = await Promise.all([
-        graoRepository.listarTodos(),
+        graoRepository.listarTodos(uid),
         degustacaoRepository.listarTodas()
       ]);
       setGraos(listaGraos);
       setDegustacoes(listaDegustacoes);
     } catch (err) {
-      console.error('Erro ao carregar dados do banco local:', err);
+      console.error('Erro ao carregar dados:', err);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [uid]);
 
   useEffect(() => {
-    carregarDados();
-  }, [carregarDados]);
+    if (!isLoadingAuth && user && uid) {
+      carregarDados();
+    }
+  }, [isLoadingAuth, user, uid, carregarDados]);
+
+  // Se o serviço de Autenticação ainda estiver carregando no início
+  if (isLoadingAuth) {
+    return (
+      <div className="min-h-screen bg-[#F5F2ED] flex flex-col items-center justify-center p-4">
+        <div className="w-10 h-10 border-4 border-[#7B1E27] border-t-transparent rounded-full animate-spin mb-3" />
+        <p className="text-xs font-semibold uppercase tracking-widest text-[#1A1A1A]/60">
+          Carregando Grão & Prosa...
+        </p>
+      </div>
+    );
+  }
+
+  // Se o usuário NÃO estiver logado, exibe as Telas de Autenticação Real
+  if (!user) {
+    if (authView === 'login') {
+      return <LoginScreen onNavigateToRegister={() => setAuthView('register')} />;
+    }
+    return <RegisterScreen onNavigateToLogin={() => setAuthView('login')} />;
+  }
 
   // Ação: Iniciar Nova Degustação com Grão pré-selecionado
   const handleDegustarGrao = (graoId: string) => {
@@ -100,11 +129,13 @@ export default function App() {
       />
 
       {/* Conteúdo Principal */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-12">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-64 space-y-3">
-            <div className="w-10 h-10 border-4 border-amber-800 border-t-transparent rounded-full animate-spin" />
-            <p className="text-xs font-semibold text-stone-500">Carregando dados do banco local...</p>
+            <div className="w-10 h-10 border-4 border-[#7B1E27] border-t-transparent rounded-full animate-spin" />
+            <p className="text-xs font-semibold text-stone-500">
+              Sincronizando despensa na nuvem...
+            </p>
           </div>
         ) : (
           <>
@@ -191,5 +222,13 @@ export default function App() {
         }}
       />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <MainApp />
+    </AuthProvider>
   );
 }

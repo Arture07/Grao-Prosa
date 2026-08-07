@@ -44,6 +44,7 @@ export type MetodoPreparo =
  */
 export interface Grao {
   id: string;
+  userId?: string;           // UID do usuário proprietário do grão no Firestore
   nome: string;               // Ex: "Fazenda Primavera - Catuaí Vermelho"
   torrefacao: string;         // Ex: "Coffee Lab", "Um Coffee Co.", "Academia do Café"
   origem: string;             // Ex: "Sul de Minas", "Cerrado Mineiro", "Alta Mogiana", "Colômbia"

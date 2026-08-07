@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Grao, CriarGraoDTO, NivelTorra, NIVEIS_TORRA } from '../types/coffee';
 import { graoRepository } from '../repositories/graoRepository';
-import { Coffee, X, Save, Scale, Flame, MapPin, Building2, Check, Sparkles } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { auth } from '../firebaseConfig';
+import { Coffee, X, Save, Scale, Flame, MapPin, Building2, Check, Sparkles, Loader2 } from 'lucide-react';
 
 interface GraoFormModalProps {
   isOpen: boolean;
@@ -21,6 +23,8 @@ export const GraoFormModal: React.FC<GraoFormModalProps> = ({
   onClose,
   onSuccess
 }) => {
+  const { uid } = useAuth();
+
   // Estado dos Campos do Formulário
   const [nome, setNome] = useState('');
   const [torrefacao, setTorrefacao] = useState('');
@@ -28,7 +32,7 @@ export const GraoFormModal: React.FC<GraoFormModalProps> = ({
   const [nivelTorra, setNivelTorra] = useState<NivelTorra>('Média');
   const [quantidadeRestante, setQuantidadeRestante] = useState<number | string>(250);
   
-  // Estado de Erros Visuais e Submissão
+  // Estado de Erros Visuais e Submissão (loading do Firebase)
   const [erros, setErros] = useState<FormErros>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -57,7 +61,7 @@ export const GraoFormModal: React.FC<GraoFormModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Lógica de Validação e Salvamento
+  // Lógica de Validação e Salvamento no Firestore
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -83,15 +87,23 @@ export const GraoFormModal: React.FC<GraoFormModalProps> = ({
     setIsSubmitting(true);
 
     try {
-      // TODO: Salvar no AsyncStorage / SQLite
+      const effectiveUid = uid || auth.currentUser?.uid;
+      if (!effectiveUid) {
+        throw new Error('Identificador de usuário não encontrado para a sessão.');
+      }
+
       if (graoParaEditar) {
-        await graoRepository.atualizar(graoParaEditar.id, {
-          nome: nome.trim(),
-          torrefacao: torrefacao.trim() || 'Desconhecida',
-          origem: origem.trim() || 'Não especificada',
-          nivelTorra,
-          quantidadeRestante: qtdNum
-        });
+        await graoRepository.atualizar(
+          graoParaEditar.id,
+          {
+            nome: nome.trim(),
+            torrefacao: torrefacao.trim() || 'Desconhecida',
+            origem: origem.trim() || 'Não especificada',
+            nivelTorra,
+            quantidadeRestante: qtdNum
+          },
+          effectiveUid
+        );
       } else {
         const novoDTO: CriarGraoDTO = {
           nome: nome.trim(),
@@ -100,15 +112,15 @@ export const GraoFormModal: React.FC<GraoFormModalProps> = ({
           nivelTorra,
           quantidadeRestante: qtdNum
         };
-        await graoRepository.salvar(novoDTO);
+        await graoRepository.salvar(novoDTO, effectiveUid);
       }
 
       limparFormulario();
       onSuccess();
       onClose();
-    } catch (err) {
-      console.error('Erro ao salvar grão no repositório local:', err);
-      setErros({ nome: 'Erro ao salvar no banco de dados local. Tente novamente.' });
+    } catch (err: unknown) {
+      console.error('Erro ao salvar grão no Firestore:', err);
+      setErros({ nome: 'Erro ao conectar com o banco na nuvem. Tente novamente.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -122,7 +134,8 @@ export const GraoFormModal: React.FC<GraoFormModalProps> = ({
         <button
           onClick={onClose}
           type="button"
-          className="absolute top-3.5 right-3.5 p-1.5 text-[#1A1A1A]/40 hover:text-[#1A1A1A] transition-colors cursor-pointer rounded-full hover:bg-black/5 z-10"
+          disabled={isSubmitting}
+          className="absolute top-3.5 right-3.5 p-1.5 text-[#1A1A1A]/40 hover:text-[#1A1A1A] transition-colors cursor-pointer rounded-full hover:bg-black/5 z-10 disabled:opacity-30"
           aria-label="Fechar formulário"
         >
           <X className="w-4 h-4" />
@@ -132,13 +145,13 @@ export const GraoFormModal: React.FC<GraoFormModalProps> = ({
         <div className="border-b border-[#1A1A1A]/10 pb-2.5 pr-8 shrink-0">
           <div className="flex items-center gap-1.5 text-[#7B1E27] font-semibold text-[10px] uppercase tracking-widest mb-0.5">
             <Sparkles className="w-3 h-3" />
-            <span>Módulo Despensa</span>
+            <span>Módulo Despensa (Firestore Cloud)</span>
           </div>
           <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#1A1A1A] tracking-tight">
             {graoParaEditar ? 'Editar Grão' : 'Adicionar à Despensa'}
           </h3>
           <p className="font-sans text-[11px] text-[#1A1A1A]/60 mt-0.5 leading-snug">
-            Informe os dados do lote para controle de estoque e degustação.
+            Informe os dados do lote para sincronização na nuvem.
           </p>
         </div>
 
@@ -153,6 +166,7 @@ export const GraoFormModal: React.FC<GraoFormModalProps> = ({
               </label>
               <input
                 type="text"
+                disabled={isSubmitting}
                 placeholder="Ex: Catuaí Amarelo - Sítio da Serra"
                 value={nome}
                 onChange={(e) => {
@@ -161,7 +175,7 @@ export const GraoFormModal: React.FC<GraoFormModalProps> = ({
                 }}
                 className={`w-full bg-transparent border-b ${
                   erros.nome ? 'border-red-600' : 'border-[#1A1A1A]/25 focus:border-[#7B1E27]'
-                } px-1 py-1.5 text-xs text-[#1A1A1A] focus:outline-none transition-colors rounded-none placeholder:text-[#1A1A1A]/35`}
+                } px-1 py-1.5 text-xs text-[#1A1A1A] focus:outline-none transition-colors rounded-none placeholder:text-[#1A1A1A]/35 disabled:opacity-50`}
               />
               {erros.nome && (
                 <p className="text-red-600 text-[10px] font-semibold mt-0.5">
@@ -177,10 +191,11 @@ export const GraoFormModal: React.FC<GraoFormModalProps> = ({
               </label>
               <input
                 type="text"
+                disabled={isSubmitting}
                 placeholder="Ex: Coffee Lab / Um Coffee Co."
                 value={torrefacao}
                 onChange={(e) => setTorrefacao(e.target.value)}
-                className="w-full bg-transparent border-b border-[#1A1A1A]/25 focus:border-[#7B1E27] px-1 py-1.5 text-xs text-[#1A1A1A] focus:outline-none transition-colors rounded-none placeholder:text-[#1A1A1A]/35"
+                className="w-full bg-transparent border-b border-[#1A1A1A]/25 focus:border-[#7B1E27] px-1 py-1.5 text-xs text-[#1A1A1A] focus:outline-none transition-colors rounded-none placeholder:text-[#1A1A1A]/35 disabled:opacity-50"
               />
             </div>
 
@@ -191,10 +206,11 @@ export const GraoFormModal: React.FC<GraoFormModalProps> = ({
               </label>
               <input
                 type="text"
+                disabled={isSubmitting}
                 placeholder="Ex: Mantiqueira de Minas - MG"
                 value={origem}
                 onChange={(e) => setOrigem(e.target.value)}
-                className="w-full bg-transparent border-b border-[#1A1A1A]/25 focus:border-[#7B1E27] px-1 py-1.5 text-xs text-[#1A1A1A] focus:outline-none transition-colors rounded-none placeholder:text-[#1A1A1A]/35"
+                className="w-full bg-transparent border-b border-[#1A1A1A]/25 focus:border-[#7B1E27] px-1 py-1.5 text-xs text-[#1A1A1A] focus:outline-none transition-colors rounded-none placeholder:text-[#1A1A1A]/35 disabled:opacity-50"
               />
             </div>
 
@@ -214,8 +230,9 @@ export const GraoFormModal: React.FC<GraoFormModalProps> = ({
                     <button
                       key={torra}
                       type="button"
+                      disabled={isSubmitting}
                       onClick={() => setNivelTorra(torra)}
-                      className={`px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all duration-150 cursor-pointer flex items-center gap-1 ${
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap transition-all duration-150 cursor-pointer flex items-center gap-1 disabled:opacity-50 ${
                         isSelected
                           ? 'bg-[#7B1E27] text-white shadow-xs ring-1 ring-[#7B1E27]/40'
                           : 'bg-black/5 text-[#1A1A1A]/75 border border-[#1A1A1A]/10 hover:bg-black/10'
@@ -241,6 +258,7 @@ export const GraoFormModal: React.FC<GraoFormModalProps> = ({
                 type="number"
                 min="1"
                 max="10000"
+                disabled={isSubmitting}
                 placeholder="250"
                 value={quantidadeRestante}
                 onChange={(e) => {
@@ -249,7 +267,7 @@ export const GraoFormModal: React.FC<GraoFormModalProps> = ({
                 }}
                 className={`w-full bg-transparent border-b ${
                   erros.quantidadeRestante ? 'border-red-600' : 'border-[#1A1A1A]/25 focus:border-[#7B1E27]'
-                } px-1 py-1.5 text-xs text-[#1A1A1A] focus:outline-none transition-colors rounded-none font-semibold placeholder:text-[#1A1A1A]/35`}
+                } px-1 py-1.5 text-xs text-[#1A1A1A] focus:outline-none transition-colors rounded-none font-semibold placeholder:text-[#1A1A1A]/35 disabled:opacity-50`}
               />
               {erros.quantidadeRestante && (
                 <p className="text-red-600 text-[10px] font-semibold mt-0.5">
@@ -265,7 +283,8 @@ export const GraoFormModal: React.FC<GraoFormModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="py-2.5 px-4 bg-transparent border border-[#1A1A1A]/20 text-[#1A1A1A] font-sans text-xs uppercase tracking-widest font-semibold hover:bg-black/5 transition-colors cursor-pointer rounded-lg text-center"
+            disabled={isSubmitting}
+            className="py-2.5 px-4 bg-transparent border border-[#1A1A1A]/20 text-[#1A1A1A] font-sans text-xs uppercase tracking-widest font-semibold hover:bg-black/5 transition-colors cursor-pointer rounded-lg text-center disabled:opacity-40"
           >
             Cancelar
           </button>
@@ -274,10 +293,19 @@ export const GraoFormModal: React.FC<GraoFormModalProps> = ({
             type="submit"
             form="grao-form"
             disabled={isSubmitting}
-            className="flex-1 py-2.5 px-5 bg-[#7B1E27] hover:bg-[#5A121A] text-white font-sans text-xs uppercase tracking-widest font-semibold transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 rounded-lg active:scale-[0.99]"
+            className="flex-1 py-2.5 px-5 bg-[#7B1E27] hover:bg-[#5A121A] text-white font-sans text-xs uppercase tracking-widest font-semibold transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 rounded-lg active:scale-[0.99]"
           >
-            <Save className="w-3.5 h-3.5" />
-            <span>{isSubmitting ? 'SALVANDO...' : graoParaEditar ? 'ATUALIZAR GRÃO' : 'SALVAR GRÃO'}</span>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
+                <span>SALVANDO NA NUVEM...</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-3.5 h-3.5" />
+                <span>{graoParaEditar ? 'ATUALIZAR GRÃO' : 'SALVAR GRÃO'}</span>
+              </>
+            )}
           </button>
         </div>
 
@@ -285,4 +313,3 @@ export const GraoFormModal: React.FC<GraoFormModalProps> = ({
     </div>
   );
 };
-

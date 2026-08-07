@@ -1,0 +1,51 @@
+{
+  "entities": {
+    "Grao": {
+      "title": "Grão de Café",
+      "description": "Pacote de café armazenado na despensa do usuário",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID do usuário proprietário do grão"
+        },
+        "nome": {
+          "type": "string",
+          "description": "Nome da fazenda ou café",
+          "maxLength": 200
+        },
+        "torrefacao": {
+          "type": "string",
+          "description": "Torrefação ou marca do café",
+          "maxLength": 200
+        },
+        "origem": {
+          "type": "string",
+          "description": "Origem ou região do café",
+          "maxLength": 200
+        },
+        "nivelTorra": {
+          "type": "string",
+          "description": "Nível de torra do café"
+        },
+        "quantidadeRestante": {
+          "type": "number",
+          "description": "Quantidade restante em gramas"
+        },
+        "criadoEm": {
+          "type": "string",
+          "description": "Data de criação em ISO String"
+        }
+      },
+      "required": ["userId", "nome", "quantidadeRestante", "criadoEm"]
+    }
+  },
+  "firestore": {
+    "/graos/{graoId}": {
+      "schema": {
+        "$ref": "#/entities/Grao"
+      },
+      "description": "Coleção de grãos da despensa"
+    }
+  }
+}
