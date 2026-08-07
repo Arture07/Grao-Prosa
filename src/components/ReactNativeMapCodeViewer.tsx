@@ -105,6 +105,10 @@ export default function RadarCafeteriasScreen() {
         });
 
         setCafeterias(mappedCafes);
+
+        // REQUISITO 1: Hidratação Silenciosa das Top 15 Cafeterias em Segundo Plano
+        const top15 = mappedCafes.slice(0, 15);
+        hydrateTop15(top15);
       }
     } catch (error: any) {
       console.error('Erro na requisição da Overpass API:', error);
@@ -114,11 +118,20 @@ export default function RadarCafeteriasScreen() {
     }
   };
 
-  // REQUISITO 1: Enriquecimento de Dados com Google Places (Lazy Loading / Hidratação On-Demand)
-  const enrichCafeDetails = async (cafe: Cafeteria) => {
-    if (!cafe || cafe.enriquecidoGoogle) return;
+  // REQUISITO 1 & 2: Hidratação Silenciosa em Lote (Background Batch Hydration)
+  const hydrateTop15 = async (topCafes: Cafeteria[]) => {
+    const CHUNK_SIZE = 3; // Lote de 3 requisições simultâneas para mitigar Rate Limit
+    for (let i = 0; i < topCafes.length; i += CHUNK_SIZE) {
+      const chunk = topCafes.slice(i, i + CHUNK_SIZE);
+      const promises = chunk.map((cafe) => enrichCafeDetails(cafe));
+      await Promise.all(promises);
+    }
+  };
 
-    setIsLoadingDetails(true);
+  // Função de Enriquecimento Pontual no Google Places
+  const enrichCafeDetails = async (cafe: Cafeteria): Promise<Cafeteria> => {
+    if (!cafe || cafe.enriquecidoGoogle) return cafe;
+
     try {
       // 1. Find Place com locationbias circle:100@lat,lng
       const findUrl = \`https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=\${encodeURIComponent(cafe.nome)}&inputtype=textquery&locationbias=circle:100@\${cafe.latitude},\${cafe.longitude}&fields=place_id,name,formatted_address,rating,user_ratings_total,photos&key=\${GOOGLE_API_KEY}\`;
@@ -127,8 +140,7 @@ export default function RadarCafeteriasScreen() {
       const placeId = findData.candidates?.[0]?.place_id;
 
       if (!placeId) {
-        setIsLoadingDetails(false);
-        return;
+        return { ...cafe, enriquecidoGoogle: true };
       }
 
       // 2. Place Details API para obter Rating, Total de Avaliações e Fotos
@@ -141,36 +153,39 @@ export default function RadarCafeteriasScreen() {
         const photoRef = result.photos?.[0]?.photo_reference;
         const photoUrl = photoRef ? \`https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=\${photoRef}&key=\${GOOGLE_API_KEY}\` : undefined;
 
-        // Inferência temporária de Wi-Fi / Tomadas (Dados da Comunidade)
-        const reviewsText = result.reviews?.map((r: any) => r.text?.toLowerCase() || '').join(' ') || '';
-        const hasWifiKeyword = reviewsText.includes('wifi') || reviewsText.includes('wi-fi') || (result.rating || 0) >= 4.5;
-        const hasPowerKeyword = reviewsText.includes('tomada') || reviewsText.includes('notebook');
-
         const updatedCafe: Cafeteria = {
           ...cafe,
-          nota: result.rating ? Number(result.rating.toFixed(1)) : 4.5,
-          totalAvaliacoes: result.user_ratings_total || 0,
+          nota: result.rating ? Number(result.rating.toFixed(1)) : cafe.nota,
+          totalAvaliacoes: result.user_ratings_total || cafe.totalAvaliacoes,
           endereco: result.formatted_address || cafe.endereco,
           fotoUrl: photoUrl,
-          temWifi: cafe.temWifi || hasWifiKeyword,
-          temTomadas: cafe.temTomadas || hasPowerKeyword,
           enriquecidoGoogle: true,
         };
 
-        setSelectedCafeteria(updatedCafe);
+        // REQUISITO 2: Atualização Dinâmica do Estado no Mapa
         setCafeterias((prev) => prev.map((c) => (c.id === cafe.id ? updatedCafe : c)));
+        return updatedCafe;
       }
     } catch (err) {
       console.warn('Erro ao enriquecer detalhes do Google Places:', err);
-    } finally {
-      setIsLoadingDetails(false);
     }
+    return { ...cafe, enriquecidoGoogle: true };
   };
 
-  // Disparado no clique do marcador (onPress)
-  const handleMarkerPress = (cafe: Cafeteria) => {
+  // REQUISITO 3: Fallback no onPress (Para o resto do mapa além do Top 15)
+  const handleMarkerPress = async (cafe: Cafeteria) => {
+    if (cafe.enriquecidoGoogle) {
+      // Já hidratada no lote de background: abre o card instantaneamente
+      setSelectedCafeteria(cafe);
+      return;
+    }
+
+    // Se não foi pré-carregada (16ª+ cafeteria), exibe o loading e busca no Google Places
     setSelectedCafeteria(cafe);
-    enrichCafeDetails(cafe);
+    setIsLoadingDetails(true);
+    const enriched = await enrichCafeDetails(cafe);
+    setSelectedCafeteria(enriched);
+    setIsLoadingDetails(false);
   };
 
   // REQUISITO 2: Deep Linking de Rotas "Humanizado" (Etiquetas de Coordenadas)

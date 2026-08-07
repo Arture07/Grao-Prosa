@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Cafeteria } from '../types/cafeteria';
 import { calcularDistanciaHaversineKm } from '../data/mockCafeterias';
 
@@ -163,21 +163,21 @@ export async function enrichCafeDetails(cafe: Cafeteria): Promise<Cafeteria> {
     console.log(`[enrichCafeDetails] Disparando hidratação Google Places para ${cafe.nome}...`);
     const res = await fetch(url);
     if (!res.ok) {
-      return { ...cafe, isLoadingDetails: false, dadosComunidade: true };
+      return { ...cafe, isLoadingDetails: false, enriquecidoGoogle: true, dadosComunidade: true };
     }
     const data = await res.json();
     if (data) {
       return {
         ...cafe,
-        nota: data.nota !== undefined ? data.nota : (cafe.nota || 4.5),
-        totalAvaliacoes: data.totalAvaliacoes || 12,
+        nota: data.nota !== undefined && data.nota !== null ? data.nota : cafe.nota,
+        totalAvaliacoes: data.totalAvaliacoes || cafe.totalAvaliacoes,
         endereco: data.endereco || cafe.endereco,
         fotoUrl: data.fotoUrl || cafe.fotoUrl,
         openNow: data.openNow !== undefined ? data.openNow : cafe.openNow,
-        temWifi: data.temWifi !== undefined ? data.temWifi : cafe.temWifi,
-        temTomadas: data.temTomadas !== undefined ? data.temTomadas : cafe.temTomadas,
+        temWifi: data.temWifi !== undefined ? (cafe.temWifi || data.temWifi) : cafe.temWifi,
+        temTomadas: data.temTomadas !== undefined ? (cafe.temTomadas || data.temTomadas) : cafe.temTomadas,
         descricao: data.descricao || cafe.descricao,
-        enriquecidoGoogle: data.enriquecidoGoogle ?? true,
+        enriquecidoGoogle: true,
         dadosComunidade: true,
         isLoadingDetails: false
       };
@@ -186,7 +186,7 @@ export async function enrichCafeDetails(cafe: Cafeteria): Promise<Cafeteria> {
     console.warn('[enrichCafeDetails Error]', err);
   }
 
-  return { ...cafe, isLoadingDetails: false, dadosComunidade: true };
+  return { ...cafe, isLoadingDetails: false, enriquecidoGoogle: true, dadosComunidade: true };
 }
 
 /**
@@ -223,6 +223,9 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
   const [errorApi, setErrorApi] = useState<string | null>(null);
   const [selectedCafeteria, setSelectedCafeteria] = useState<Cafeteria | null>(null);
 
+  // Ref para controle de concorrência e descarte de buscas antigas
+  const batchRequestIdRef = useRef<number>(0);
+
   // Filtros
   const [filtroWifi, setFiltroWifi] = useState<boolean>(false);
   const [filtroTomadas, setFiltroTomadas] = useState<boolean>(false);
@@ -230,27 +233,66 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
   const [filtroNotaMin, setFiltroNotaMin] = useState<number>(0);
   const [termoBusca, setTermoBusca] = useState<string>('');
 
-  // Seleção e Hidratação On-Demand
+  // Requisito 3: Fallback no onPress (Para o resto do mapa além do Top 15)
   const selecionarCafeteria = useCallback(async (cafeteria: Cafeteria | null) => {
     if (!cafeteria) {
       setSelectedCafeteria(null);
       return;
     }
 
-    // Marca estado inicial com carregamento de detalhes
-    const cafeComLoading = { ...cafeteria, isLoadingDetails: !cafeteria.enriquecidoGoogle };
+    // Se já foi hidratada pelo background batch ou por clique prévio, abre instantaneamente sem loading
+    if (cafeteria.enriquecidoGoogle) {
+      setSelectedCafeteria({ ...cafeteria, isLoadingDetails: false });
+      return;
+    }
+
+    // Se for a 16ª+ cafeteria ou ainda não foi pré-carregada, exibe spinner de carregamento e faz o fetch pontual
+    const cafeComLoading = { ...cafeteria, isLoadingDetails: true };
     setSelectedCafeteria(cafeComLoading);
 
-    if (!cafeteria.enriquecidoGoogle) {
-      const cafeEnriquecido = await enrichCafeDetails(cafeteria);
-      setSelectedCafeteria(cafeEnriquecido);
+    const cafeEnriquecido = await enrichCafeDetails(cafeteria);
+    setSelectedCafeteria(cafeEnriquecido);
 
-      // Atualiza também na lista global
-      setCafeterias(prev => prev.map(c => c.id === cafeteria.id ? cafeEnriquecido : c));
+    // Atualiza também na lista global
+    setCafeterias(prev => prev.map(c => c.id === cafeteria.id ? cafeEnriquecido : c));
+  }, []);
+
+  // Requisito 1 & 2: Hidratação Silenciosa das Top 15 Cafeterias com Atualização Dinâmica de Estado
+  const hidratarLoteTop15 = useCallback(async (topCafes: Cafeteria[], requestId: number) => {
+    const CHUNK_SIZE = 3; // Lote de 3 requisições paralelas para proteger a API contra Rate Limits
+
+    for (let i = 0; i < topCafes.length; i += CHUNK_SIZE) {
+      if (requestId !== batchRequestIdRef.current) break;
+
+      const chunk = topCafes.slice(i, i + CHUNK_SIZE);
+      const enrichedChunk = await Promise.all(
+        chunk.map(cafe => enrichCafeDetails(cafe))
+      );
+
+      if (requestId !== batchRequestIdRef.current) break;
+
+      // Requisito 2: Atualização Dinâmica no Estado (pins no mapa se atualizam silenciosamente)
+      setCafeterias(prev => {
+        const updated = [...prev];
+        for (const cafeEnriquecido of enrichedChunk) {
+          const index = updated.findIndex(c => c.id === cafeEnriquecido.id);
+          if (index !== -1) {
+            updated[index] = cafeEnriquecido;
+          }
+        }
+        return updated;
+      });
+
+      // Se o modal do card estiver aberto para uma das cafeterias hidratadas no lote, atualiza
+      setSelectedCafeteria(currentSelected => {
+        if (!currentSelected) return null;
+        const match = enrichedChunk.find(c => c.id === currentSelected.id);
+        return match ? { ...match, isLoadingDetails: false } : currentSelected;
+      });
     }
   }, []);
 
-  // Busca cafeterias via Overpass API (OSM) ao atualizar a localização
+  // Busca cafeterias via Overpass API (OSM) e inicia pré-carregamento em lote
   const carregarCafeteriasOSM = useCallback(async (lat: number | null, lng: number | null) => {
     if (lat === null || lat === undefined || lng === null || lng === undefined || isNaN(lat) || isNaN(lng) || (lat === 0 && lng === 0)) {
       console.warn('[GPS Guard] Tentativa de busca abortada. Coordenadas de GPS ausentes/nulas.');
@@ -263,17 +305,35 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
     setIsLoadingApi(true);
     setErrorApi(null);
 
+    const requestId = ++batchRequestIdRef.current;
+
     try {
       const resultados = await fetchNearbyCafes(lat, lng, 15000);
-      setCafeterias(resultados);
+      if (requestId !== batchRequestIdRef.current) return;
+
+      // Ordena cafeterias por distância para pegar os 15 mais próximos do usuário
+      const comDistancia = resultados.map(c => ({
+        ...c,
+        distanciaKm: c.distanciaKm ?? calcularDistanciaHaversineKm(lat, lng, c.latitude, c.longitude)
+      })).sort((a, b) => (a.distanciaKm ?? 0) - (b.distanciaKm ?? 0));
+
+      setCafeterias(comDistancia);
+
+      // Requisito 1: Seleciona as 15 cafeterias mais próximas e dispara a hidratação em segundo plano
+      const top15 = comDistancia.slice(0, 15);
+      hidratarLoteTop15(top15, requestId);
+
     } catch (err: unknown) {
+      if (requestId !== batchRequestIdRef.current) return;
       const msg = err instanceof Error ? err.message : 'Erro ao buscar cafeterias na Overpass API.';
       setErrorApi(msg);
       setCafeterias([]);
     } finally {
-      setIsLoadingApi(false);
+      if (requestId === batchRequestIdRef.current) {
+        setIsLoadingApi(false);
+      }
     }
-  }, []);
+  }, [hidratarLoteTop15]);
 
   // Efeito disparado quando a latitude ou longitude do GPS muda
   useEffect(() => {

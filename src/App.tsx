@@ -11,10 +11,9 @@ import { DiarioView } from './components/DiarioView';
 import { BrewingTimerView } from './components/BrewingTimerView';
 import { RadarCafeteriasView } from './components/RadarCafeteriasView';
 import { GraoFormModal } from './components/GraoFormModal';
-import { ArquiteturaModal } from './components/ArquiteturaModal';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'despensa' | 'nova-degustacao' | 'diario' | 'cronometro' | 'radar' | 'arquitetura'>('despensa');
+  const [activeTab, setActiveTab] = useState<'despensa' | 'nova-degustacao' | 'diario' | 'cronometro' | 'radar'>('despensa');
   const [graos, setGraos] = useState<Grao[]>([]);
   const [degustacoes, setDegustacoes] = useState<Degustacao[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -174,10 +173,6 @@ export default function App() {
                   setActiveTab('nova-degustacao');
                 }}
               />
-            )}
-
-            {activeTab === 'arquitetura' && (
-              <ArquiteturaModal />
             )}
           </>
         )}

@@ -1,9 +1,9 @@
 import React from 'react';
-import { Coffee, PlusCircle, BookOpen, Layers, RefreshCw, Sparkles, Timer, MapPin } from 'lucide-react';
+import { Coffee, PlusCircle, BookOpen, RefreshCw, Sparkles, Timer, MapPin } from 'lucide-react';
 
 interface HeaderProps {
-  activeTab: 'despensa' | 'nova-degustacao' | 'diario' | 'cronometro' | 'radar' | 'arquitetura';
-  setActiveTab: (tab: 'despensa' | 'nova-degustacao' | 'diario' | 'cronometro' | 'radar' | 'arquitetura') => void;
+  activeTab: 'despensa' | 'nova-degustacao' | 'diario' | 'cronometro' | 'radar';
+  setActiveTab: (tab: 'despensa' | 'nova-degustacao' | 'diario' | 'cronometro' | 'radar') => void;
   onOpenNovoGrao: () => void;
   onResetDatabase: () => void;
 }
@@ -156,18 +156,6 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <MapPin className="w-3.5 h-3.5 text-emerald-700" />
             05. Radar GPS
-          </button>
-
-          <button
-            onClick={() => setActiveTab('arquitetura')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 transition-all whitespace-nowrap ml-auto cursor-pointer border-b-2 ${
-              activeTab === 'arquitetura'
-                ? 'border-[#5A4033] font-bold text-[#5A4033]'
-                : 'border-transparent text-[#1A1A1A]/60 hover:text-[#1A1A1A]'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            Arquitetura RN
           </button>
         </nav>
       </div>
