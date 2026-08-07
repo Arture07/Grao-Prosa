@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Degustacao, Grao } from '../types/coffee';
 import { degustacaoRepository } from '../repositories/degustacaoRepository';
+import { useAuth } from '../hooks/useAuth';
 import { 
   BookOpen, 
   Star, 
@@ -11,60 +12,68 @@ import {
   Scale, 
   Droplet,
   Tag,
-  FileText
+  FileText,
+  Loader2
 } from 'lucide-react';
 
 interface DiarioViewProps {
-  degustacoes: Degustacao[];
-  graosMap: Record<string, Grao>;
-  onRefresh: () => void;
+  degustacoes?: Degustacao[];
+  graosMap?: Record<string, Grao>;
+  onRefresh?: () => void;
   onNovaDegustacaoClick: () => void;
   filtroGraoId?: string;
   onClearFiltroGrao?: () => void;
 }
 
 export const DiarioView: React.FC<DiarioViewProps> = ({
-  degustacoes,
-  graosMap,
+  degustacoes: degustacoesProp,
+  graosMap = {},
   onRefresh,
   onNovaDegustacaoClick,
   filtroGraoId,
   onClearFiltroGrao
 }) => {
+  const { uid } = useAuth();
+
+  const [listaDegustacoes, setListaDegustacoes] = useState<Degustacao[]>(degustacoesProp || []);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [busca, setBusca] = useState('');
   const [metodoFiltro, setMetodoFiltro] = useState<string>('todos');
   const [deletandoId, setDeletandoId] = useState<string | null>(null);
 
-  // Filtragem
-  const degustacoesFiltradas = degustacoes.filter((d) => {
-    const grao = graosMap[d.graoId];
-    const nomeGrao = grao ? grao.nome.toLowerCase() : '';
-    const torrefacao = grao ? grao.torrefacao.toLowerCase() : '';
-    const termoBusca = busca.toLowerCase();
+  // Busca real de degustações do usuário no Firebase Firestore
+  const carregarDegustacoes = useCallback(async () => {
+    if (!uid) return;
+    try {
+      setIsLoading(true);
+      const reais = await degustacaoRepository.listarTodas(uid);
+      setListaDegustacoes(reais);
+    } catch (err) {
+      console.error('Erro ao carregar degustações no DiarioView:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [uid]);
 
-    // Filtro por Grão
-    if (filtroGraoId && d.graoId !== filtroGraoId) return false;
+  useEffect(() => {
+    carregarDegustacoes();
+  }, [carregarDegustacoes]);
 
-    // Filtro por Método
-    if (metodoFiltro !== 'todos' && d.metodoPreparo !== metodoFiltro) return false;
+  // Se o componente receber atualização via props, mantém sincronizado
+  useEffect(() => {
+    if (degustacoesProp && degustacoesProp.length > 0) {
+      setListaDegustacoes(degustacoesProp);
+    }
+  }, [degustacoesProp]);
 
-    // Filtro de Texto
-    const bateTexto = 
-      nomeGrao.includes(termoBusca) ||
-      torrefacao.includes(termoBusca) ||
-      d.metodoPreparo.toLowerCase().includes(termoBusca) ||
-      d.notasSensoriais.some(tag => tag.toLowerCase().includes(termoBusca)) ||
-      (d.observacoes && d.observacoes.toLowerCase().includes(termoBusca));
-
-    return bateTexto;
-  });
-
+  // Exclusão real no Firebase Firestore
   const handleDeletarDegustacao = async (id: string) => {
-    if (confirm('Deseja realmente remover esta nota de degustação do seu diário?')) {
+    if (confirm('Deseja realmente remover esta nota de degustação do seu diário no Firebase?')) {
       setDeletandoId(id);
       try {
         await degustacaoRepository.deletar(id);
-        onRefresh();
+        await carregarDegustacoes();
+        if (onRefresh) onRefresh();
       } catch (err) {
         console.error('Erro ao deletar degustação:', err);
         alert('Falha ao remover o registro.');
@@ -73,6 +82,36 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
       }
     }
   };
+
+  // Filtragem local dos dados reais
+  const degustacoesFiltradas = listaDegustacoes.filter((d) => {
+    const grao = graosMap[d.graoId];
+    const nomeGrao = (d.graoNomeSnapshot || (grao ? grao.nome : '')).toLowerCase();
+    const torrefacao = (grao ? grao.torrefacao : '').toLowerCase();
+    const metodo = (d.metodo || d.metodoPreparo || '').toLowerCase();
+    const termoBusca = busca.toLowerCase();
+
+    // Filtro por Grão
+    if (filtroGraoId && d.graoId !== filtroGraoId) return false;
+
+    // Filtro por Método
+    if (metodoFiltro !== 'todos' && d.metodoPreparo !== metodoFiltro && d.metodo !== metodoFiltro) {
+      return false;
+    }
+
+    // Filtro de Texto
+    const tags = d.descritores || d.notasSensoriais || [];
+    const obs = d.impressoes || d.observacoes || '';
+
+    const bateTexto = 
+      nomeGrao.includes(termoBusca) ||
+      torrefacao.includes(termoBusca) ||
+      metodo.includes(termoBusca) ||
+      tags.some(tag => tag.toLowerCase().includes(termoBusca)) ||
+      obs.toLowerCase().includes(termoBusca);
+
+    return bateTexto;
+  });
 
   const graoFiltroNome = filtroGraoId && graosMap[filtroGraoId] ? graosMap[filtroGraoId].nome : null;
 
@@ -85,7 +124,7 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
             03. Diário Sensorial
           </h2>
           <p className="font-sans text-[10px] uppercase tracking-[0.2em] opacity-60 mt-0.5">
-            Histórico e Avaliações de Preparo
+            Sincronizado com Firebase Firestore
           </p>
         </div>
 
@@ -138,8 +177,13 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
         </select>
       </div>
 
-      {/* Entry List */}
-      {degustacoesFiltradas.length === 0 ? (
+      {/* State Loading */}
+      {isLoading ? (
+        <div className="stamped-border p-12 text-center bg-white/30 space-y-3">
+          <Loader2 className="w-8 h-8 text-[#7B1E27] animate-spin mx-auto" />
+          <p className="font-serif text-lg text-[#1A1A1A]">Carregando diário do Firebase...</p>
+        </div>
+      ) : degustacoesFiltradas.length === 0 ? (
         <div className="stamped-border p-12 text-center bg-white/30 space-y-3">
           <BookOpen className="w-8 h-8 text-[#5A4033] opacity-40 mx-auto" />
           <h3 className="font-serif text-2xl text-[#1A1A1A] italic">Nenhum registro encontrado</h3>
@@ -153,6 +197,13 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
         <div className="space-y-6">
           {degustacoesFiltradas.map((d) => {
             const grao = graosMap[d.graoId];
+            // Se o grão foi excluído da despensa, o snapshot garante que a interface renderize o nome do grão!
+            const nomeExibicao = d.graoNomeSnapshot || (grao ? grao.nome : 'Grão Removido do Estoque');
+            const metodoExibicao = d.metodo || d.metodoPreparo || 'V60';
+            const doseExibicao = d.dose ?? d.doseGramas;
+            const aguaExibicao = d.agua ?? d.volumeAguaMl;
+            const descritoresExibicao = d.descritores || d.notasSensoriais || [];
+            const impressoesExibicao = d.impressoes || d.observacoes || '';
 
             return (
               <div
@@ -164,20 +215,24 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-sans text-[10px] font-bold uppercase tracking-widest bg-[#1A1A1A] text-[#F5F2ED] px-2 py-0.5">
-                        {d.metodoPreparo}
+                        {metodoExibicao}
                       </span>
                       <span className="font-sans text-[10px] text-[#1A1A1A]/60 uppercase tracking-widest flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
-                        {d.data}
+                        {d.data || (d.criadoEm ? d.criadoEm.split('T')[0] : '')}
                       </span>
                     </div>
 
                     <h3 className="font-serif text-2xl font-semibold text-[#1A1A1A]">
-                      {grao ? grao.nome : 'Grão Removido do Estoque'}
+                      {nomeExibicao}
                     </h3>
-                    {grao && (
+                    {grao ? (
                       <p className="font-sans text-[11px] uppercase tracking-wider opacity-60 italic mt-0.5">
                         {grao.torrefacao} • Torra {grao.nivelTorra} • Origem: {grao.origem}
+                      </p>
+                    ) : (
+                      <p className="font-sans text-[11px] uppercase tracking-wider text-amber-800/80 italic mt-0.5">
+                        (Grão removido da despensa — Snapshot preservado)
                       </p>
                     )}
                   </div>
@@ -193,41 +248,45 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
                       onClick={() => handleDeletarDegustacao(d.id)}
                       disabled={deletandoId === d.id}
                       title="Excluir Registro"
-                      className="p-1.5 text-[#1A1A1A]/40 hover:text-red-700 transition-colors cursor-pointer"
+                      className="p-1.5 text-[#1A1A1A]/40 hover:text-red-700 transition-colors cursor-pointer disabled:opacity-30"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      {deletandoId === d.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-red-700" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                 </div>
 
                 {/* Parameters */}
-                {(d.doseGramas || d.volumeAguaMl) && (
+                {(doseExibicao !== undefined || aguaExibicao !== undefined) && (
                   <div className="flex items-center gap-4 text-xs font-sans text-[#1A1A1A]/80 border-b border-[#1A1A1A]/5 pb-3">
-                    {d.doseGramas && (
+                    {doseExibicao ? (
                       <span className="flex items-center gap-1">
-                        <Scale className="w-3.5 h-3.5 text-[#5A4033]" /> Dose: <strong>{d.doseGramas}g</strong>
+                        <Scale className="w-3.5 h-3.5 text-[#5A4033]" /> Dose: <strong>{doseExibicao}g</strong>
                       </span>
-                    )}
-                    {d.volumeAguaMl && (
+                    ) : null}
+                    {aguaExibicao ? (
                       <span className="flex items-center gap-1">
-                        <Droplet className="w-3.5 h-3.5 text-[#5A4033]" /> Água: <strong>{d.volumeAguaMl}ml</strong>
+                        <Droplet className="w-3.5 h-3.5 text-[#5A4033]" /> Água: <strong>{aguaExibicao}ml</strong>
                       </span>
-                    )}
-                    {d.doseGramas && d.volumeAguaMl && (
+                    ) : null}
+                    {doseExibicao && aguaExibicao ? (
                       <span className="text-[10px] font-mono opacity-60">
-                        Proporção: 1:{(d.volumeAguaMl / d.doseGramas).toFixed(1)}
+                        Proporção: 1:{(aguaExibicao / doseExibicao).toFixed(1)}
                       </span>
-                    )}
+                    ) : null}
                   </div>
                 )}
 
                 {/* Sensory Descriptors / Tags */}
-                {d.notasSensoriais.length > 0 && (
+                {descritoresExibicao.length > 0 && (
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className="font-sans text-[10px] uppercase tracking-wider text-[#5A4033] font-semibold mr-1 flex items-center gap-1">
                       <Tag className="w-3 h-3" /> Descritores:
                     </span>
-                    {d.notasSensoriais.map((tag) => (
+                    {descritoresExibicao.map((tag) => (
                       <span
                         key={tag}
                         className="editorial-pill bg-[#F5F2ED] text-[#1A1A1A]"
@@ -239,12 +298,12 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
                 )}
 
                 {/* Notes */}
-                {d.observacoes && (
+                {impressoesExibicao && (
                   <div className="stamped-border bg-[#F5F2ED]/60 p-3.5 text-xs text-[#1A1A1A] space-y-1">
                     <span className="font-sans text-[10px] uppercase tracking-wider font-semibold text-[#5A4033] flex items-center gap-1">
                       <FileText className="w-3.5 h-3.5" /> Impressões do Preparo:
                     </span>
-                    <p className="font-serif italic text-[#1A1A1A]/80 text-sm leading-relaxed">{d.observacoes}</p>
+                    <p className="font-serif italic text-[#1A1A1A]/80 text-sm leading-relaxed">{impressoesExibicao}</p>
                   </div>
                 )}
               </div>

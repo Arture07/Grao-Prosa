@@ -11,10 +11,27 @@ service cloud.firestore {
         && data.criadoEm is string;
     }
 
+    function isValidDegustacao(data) {
+      return data.keys().hasAll(['userId', 'graoId', 'graoNomeSnapshot', 'metodo', 'nota', 'criadoEm'])
+        && data.userId is string
+        && data.graoId is string
+        && data.graoNomeSnapshot is string
+        && data.metodo is string
+        && data.nota is number
+        && data.criadoEm is string;
+    }
+
     match /graos/{graoId} {
       allow read, list: if request.auth == null || resource.data.userId == request.auth.uid;
       allow create: if isValidGrao(request.resource.data) && (request.auth == null || request.resource.data.userId == request.auth.uid);
       allow update: if isValidGrao(request.resource.data) && (request.auth == null || resource.data.userId == request.auth.uid);
+      allow delete: if request.auth == null || resource.data.userId == request.auth.uid;
+    }
+
+    match /degustacoes/{degustacaoId} {
+      allow read, list: if request.auth == null || resource.data.userId == request.auth.uid;
+      allow create: if isValidDegustacao(request.resource.data) && (request.auth == null || request.resource.data.userId == request.auth.uid);
+      allow update: if isValidDegustacao(request.resource.data) && (request.auth == null || resource.data.userId == request.auth.uid);
       allow delete: if request.auth == null || resource.data.userId == request.auth.uid;
     }
 

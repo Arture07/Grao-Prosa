@@ -38,6 +38,55 @@
         }
       },
       "required": ["userId", "nome", "quantidadeRestante", "criadoEm"]
+    },
+    "Degustacao": {
+      "title": "Degustação Sensorial",
+      "description": "Registro de degustação do café no diário sensorial do usuário",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID do usuário proprietário"
+        },
+        "graoId": {
+          "type": "string",
+          "description": "ID do grão de café degustado"
+        },
+        "graoNomeSnapshot": {
+          "type": "string",
+          "description": "Cópia do nome do grão para preservar histórico"
+        },
+        "metodo": {
+          "type": "string",
+          "description": "Método de preparo utilizado"
+        },
+        "dose": {
+          "type": "number",
+          "description": "Dose de café em gramas"
+        },
+        "agua": {
+          "type": "number",
+          "description": "Volume de água em ml"
+        },
+        "descritores": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Descritores sensoriais"
+        },
+        "impressoes": {
+          "type": "string",
+          "description": "Notas e impressões sobre a extração"
+        },
+        "nota": {
+          "type": "number",
+          "description": "Nota dada de 1 a 5"
+        },
+        "criadoEm": {
+          "type": "string",
+          "description": "Data de criação em ISO String"
+        }
+      },
+      "required": ["userId", "graoId", "graoNomeSnapshot", "metodo", "nota", "criadoEm"]
     }
   },
   "firestore": {
@@ -46,6 +95,12 @@
         "$ref": "#/entities/Grao"
       },
       "description": "Coleção de grãos da despensa"
+    },
+    "/degustacoes/{degustacaoId}": {
+      "schema": {
+        "$ref": "#/entities/Degustacao"
+      },
+      "description": "Coleção de degustações do diário"
     }
   }
 }

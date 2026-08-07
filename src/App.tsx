@@ -44,7 +44,7 @@ function MainApp() {
       setIsLoading(true);
       const [listaGraos, listaDegustacoes] = await Promise.all([
         graoRepository.listarTodos(uid),
-        degustacaoRepository.listarTodas()
+        degustacaoRepository.listarTodas(uid)
       ]);
       setGraos(listaGraos);
       setDegustacoes(listaDegustacoes);

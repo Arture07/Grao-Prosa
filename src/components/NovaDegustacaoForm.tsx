@@ -2,23 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { Grao, CriarDegustacaoDTO, METODOS_PREPARO, NOTAS_SENSORIAIS_SUGERIDAS } from '../types/coffee';
 import { degustacaoRepository } from '../repositories/degustacaoRepository';
 import { graoRepository } from '../repositories/graoRepository';
+import { useAuth } from '../hooks/useAuth';
 import { 
   Coffee, 
   Star, 
   Tag, 
-  Plus, 
   Check, 
-  Sparkles, 
   Calendar, 
   Droplet, 
   Scale, 
   ArrowLeft,
   CheckCircle2,
-  Info
+  Info,
+  Loader2
 } from 'lucide-react';
 
 interface NovaDegustacaoFormProps {
-  graos: Grao[];
+  graos?: Grao[];
   graoPreSelecionadoId?: string;
   dadosPrePreenchidos?: {
     metodo: string;
@@ -30,13 +30,19 @@ interface NovaDegustacaoFormProps {
 }
 
 export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
-  graos,
+  graos: graosProp,
   graoPreSelecionadoId,
   dadosPrePreenchidos,
   onSuccess,
   onCancel
 }) => {
-  const [graoId, setGraoId] = useState<string>(graoPreSelecionadoId || (graos.length > 0 ? graos[0].id : ''));
+  const { uid } = useAuth();
+
+  // Estado de grãos carregados do Firestore
+  const [listaGraos, setListaGraos] = useState<Grao[]>(graosProp || []);
+  const [isLoadingGraos, setIsLoadingGraos] = useState<boolean>(!graosProp || graosProp.length === 0);
+
+  const [graoId, setGraoId] = useState<string>(graoPreSelecionadoId || '');
   const [data, setData] = useState<string>(new Date().toISOString().split('T')[0]);
   const [metodoPreparo, setMetodoPreparo] = useState<string>(dadosPrePreenchidos?.metodo || 'V60');
   const [metodoOutro, setMetodoOutro] = useState<string>('');
@@ -54,16 +60,39 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sucessoMsg, setSucessoMsg] = useState(false);
 
+  // Busca real de grãos no Firestore usando graoRepository.listarTodos(uid)
   useEffect(() => {
-    if (graoPreSelecionadoId) {
-      setGraoId(graoPreSelecionadoId);
-    } else if (graos.length > 0 && !graoId) {
-      setGraoId(graos[0].id);
+    let isMounted = true;
+
+    async function carregarGraosReais() {
+      if (!uid) return;
+      try {
+        setIsLoadingGraos(true);
+        const realGraos = await graoRepository.listarTodos(uid);
+        if (isMounted) {
+          setListaGraos(realGraos);
+          if (graoPreSelecionadoId) {
+            setGraoId(graoPreSelecionadoId);
+          } else if (realGraos.length > 0) {
+            setGraoId(realGraos[0].id);
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao buscar grãos no Firestore:', err);
+      } finally {
+        if (isMounted) setIsLoadingGraos(false);
+      }
     }
-  }, [graoPreSelecionadoId, graos]);
+
+    carregarGraosReais();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [uid, graoPreSelecionadoId]);
 
   // Grão selecionado atualmente
-  const graoSelecionado = graos.find(g => g.id === graoId);
+  const graoSelecionado = listaGraos.find(g => g.id === graoId);
 
   // Alterna tag sensorial no array
   const toggleTagSensorial = (tag: string) => {
@@ -84,7 +113,7 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
     }
   };
 
-  // Submissão do Formulário
+  // Submissão do Formulário para o Firestore
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -100,39 +129,68 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
         ? metodoOutro.trim() 
         : metodoPreparo;
 
-      const dto: CriarDegustacaoDTO = {
+      const graoNomeSnapshot = graoSelecionado ? graoSelecionado.nome : 'Grão do Estoque';
+
+      const dto: CriarDegustacaoDTO & {
+        userId?: string;
+        graoNomeSnapshot?: string;
+        metodo?: string;
+        dose?: number;
+        agua?: number;
+        descritores?: string[];
+        impressoes?: string;
+        criadoEm?: string;
+      } = {
+        userId: uid,
         graoId,
+        graoNomeSnapshot,
         data,
         metodoPreparo: metodoFinal,
+        metodo: metodoFinal,
         nota,
         notasSensoriais,
-        doseGramas: Number(doseGramas) || undefined,
-        volumeAguaMl: Number(volumeAguaMl) || undefined,
-        observacoes: observacoes.trim() || undefined
+        descritores: notasSensoriais,
+        doseGramas: Number(doseGramas) || 0,
+        dose: Number(doseGramas) || 0,
+        volumeAguaMl: Number(volumeAguaMl) || 0,
+        agua: Number(volumeAguaMl) || 0,
+        observacoes: observacoes.trim(),
+        impressoes: observacoes.trim(),
+        criadoEm: new Date(data).toISOString()
       };
 
-      // 1. Salva a degustação no diário
-      await degustacaoRepository.salvar(dto);
+      // 1. Salva a degustação no Firestore através do repositório
+      await degustacaoRepository.salvar(dto, uid);
 
-      // 2. Se marcado para abater do estoque, abater a dose em gramas
+      // 2. Se marcado para abater do estoque, abater a dose em gramas no Firestore
       if (abaterEstoque && doseGramas > 0 && graoSelecionado) {
-        await graoRepository.abaterEstoque(graoId, Number(doseGramas));
+        await graoRepository.abaterEstoque(graoId, Number(doseGramas), uid);
       }
 
       setSucessoMsg(true);
       setTimeout(() => {
         onSuccess();
-      }, 1200);
+      }, 1000);
 
     } catch (err) {
-      console.error('Erro ao salvar degustação:', err);
-      alert('Erro ao registrar a degustação.');
+      console.error('Erro ao salvar degustação no Firestore:', err);
+      alert('Erro ao registrar a degustação. Verifique a conexão.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (graos.length === 0) {
+  if (isLoadingGraos) {
+    return (
+      <div className="stamped-border bg-white/80 p-12 text-center space-y-3 max-w-lg mx-auto">
+        <Loader2 className="w-8 h-8 text-[#7B1E27] animate-spin mx-auto" />
+        <p className="font-serif text-lg font-semibold text-[#1A1A1A]">Buscando grãos no estoque...</p>
+        <p className="font-sans text-xs text-[#1A1A1A]/60">Sincronizando com o Firebase Firestore.</p>
+      </div>
+    );
+  }
+
+  if (listaGraos.length === 0) {
     return (
       <div className="stamped-border bg-white/80 p-8 text-center space-y-4 max-w-lg mx-auto">
         <Info className="w-8 h-8 text-[#5A4033] mx-auto" />
@@ -161,7 +219,7 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
           <ArrowLeft className="w-4 h-4" /> Voltar
         </button>
         <span className="font-sans text-[10px] uppercase tracking-widest text-[#5A4033] font-semibold">
-          Entidade: Degustação (Diário)
+          Firebase Firestore • Diário
         </span>
       </div>
 
@@ -177,16 +235,16 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
             <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0" />
             <div>
               <p className="font-serif font-semibold text-sm">Degustação Registrada com Sucesso!</p>
-              <p className="font-sans text-xs opacity-80">O estoque foi abatido e o diário foi atualizado.</p>
+              <p className="font-sans text-xs opacity-80">Registro salvo no Firestore e estoque atualizado.</p>
             </div>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6 font-sans">
-          {/* 1. Seleção do Grão */}
+          {/* 1. Seleção do Grão Real */}
           <div className="space-y-2">
             <label className="block text-xs font-bold uppercase tracking-wider text-[#1A1A1A]">
-              1. Selecionar Grão em Estoque *
+              1. Selecionar Grão em Estoque (Firestore) *
             </label>
             <div className="relative">
               <select
@@ -195,7 +253,7 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
                 className="w-full bg-[#F5F2ED] stamped-border px-4 py-3 text-xs text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A] cursor-pointer"
                 required
               >
-                {graos.map((g) => (
+                {listaGraos.map((g) => (
                   <option key={g.id} value={g.id}>
                     {g.nome} — {g.torrefacao} ({g.quantidadeRestante}g restantes)
                   </option>
@@ -292,12 +350,12 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
             </div>
           </div>
 
-          {/* 4. Notas Sensoriais (Tags) */}
+          {/* 4. Descritores Sensoriais */}
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <label className="block text-xs font-bold uppercase tracking-wider text-[#1A1A1A] flex items-center gap-1.5">
                 <Tag className="w-4 h-4 text-[#5A4033]" />
-                4. Descritores Sensoriais (Array String)
+                4. Descritores Sensoriais
               </label>
               <span className="text-[10px] uppercase opacity-60">
                 {notasSensoriais.length} {notasSensoriais.length === 1 ? 'item' : 'itens'}
@@ -439,9 +497,16 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 py-3 px-4 bg-[#1A1A1A] hover:bg-[#333] text-[#F5F2ED] font-sans text-xs uppercase tracking-widest font-medium transition-all cursor-pointer disabled:opacity-50"
+              className="flex-1 py-3 px-4 bg-[#1A1A1A] hover:bg-[#333] text-[#F5F2ED] font-sans text-xs uppercase tracking-widest font-medium transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {isSubmitting ? 'Salvando...' : 'Salvar no Diário'}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  Salvando no Firestore...
+                </>
+              ) : (
+                'Salvar no Diário'
+              )}
             </button>
           </div>
         </form>

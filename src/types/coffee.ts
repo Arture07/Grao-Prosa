@@ -71,14 +71,22 @@ export interface Grao {
  */
 export interface Degustacao {
   id: string;
+  userId?: string;            // UID do usuário no Firestore
   graoId: string;             // Relacionamento (Chave Estrangeira) com a entidade Grao
-  data: string;               // Data da degustação (ISO String YYYY-MM-DD ou completo)
+  graoNomeSnapshot?: string;  // Cópia do nome do grão para preservar histórico
+  data: string;               // Data da degustação
   metodoPreparo: MetodoPreparo | string; // Método utilizado no preparo
+  metodo?: string;            // Alias para metodoPreparo
   nota: number;               // Avaliação de 1 a 5 estrelas
-  notasSensoriais: string[];  // Array de descritores sensoriais (ex: ["frutado", "achocolatado"])
-  doseGramas?: number;        // Opcional: gramas de café usadas
-  volumeAguaMl?: number;      // Opcional: ml de água
+  notasSensoriais: string[];  // Array de descritores sensoriais
+  descritores?: string[];     // Alias para notasSensoriais
+  doseGramas?: number;        // Gramas de café usadas
+  dose?: number;              // Alias para doseGramas
+  volumeAguaMl?: number;      // Ml de água
+  agua?: number;              // Alias para volumeAguaMl
   observacoes?: string;       // Notas/Comentários sobre a extração
+  impressoes?: string;        // Alias para observacoes
+  criadoEm?: string;          // Timestamp ISO de criação
 }
 
 // Tipo DTO para criação de novos Grãos (sem id e criadoEm)
