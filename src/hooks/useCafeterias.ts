@@ -153,13 +153,20 @@ export async function fetchNearbyCafes(
  * Função de Enriquecimento de Dados com Google Places (Hidratação Sob Demanda / Lazy Loading)
  * Disparada apenas quando o usuário clica em uma cafeteria/marcador.
  */
-export async function enrichCafeDetails(cafe: Cafeteria): Promise<Cafeteria> {
+export async function enrichCafeDetails(
+  cafe: Cafeteria,
+  userLat?: number | null,
+  userLng?: number | null
+): Promise<Cafeteria> {
   if (!cafe || cafe.enriquecidoGoogle) {
     return { ...cafe, isLoadingDetails: false };
   }
 
   try {
-    const url = `/api/places/details?name=${encodeURIComponent(cafe.nome)}&lat=${cafe.latitude}&lng=${cafe.longitude}`;
+    let url = `/api/places/details?name=${encodeURIComponent(cafe.nome)}&lat=${cafe.latitude}&lng=${cafe.longitude}`;
+    if (userLat !== null && userLat !== undefined && userLng !== null && userLng !== undefined) {
+      url += `&userLat=${userLat}&userLng=${userLng}`;
+    }
     console.log(`[enrichCafeDetails] Disparando hidratação Google Places para ${cafe.nome}...`);
     const res = await fetch(url);
     if (!res.ok) {
@@ -174,6 +181,11 @@ export async function enrichCafeDetails(cafe: Cafeteria): Promise<Cafeteria> {
         endereco: data.endereco || cafe.endereco,
         fotoUrl: data.fotoUrl || cafe.fotoUrl,
         openNow: data.openNow !== undefined ? data.openNow : cafe.openNow,
+        horarioFuncionamento: data.horarioFuncionamento || cafe.horarioFuncionamento,
+        horariosSemana: data.horariosSemana || cafe.horariosSemana,
+        reviews: data.reviews || cafe.reviews,
+        distanciaRotaTexto: data.distanciaRotaTexto || cafe.distanciaRotaTexto,
+        duracaoRotaTexto: data.duracaoRotaTexto || cafe.duracaoRotaTexto,
         temWifi: data.temWifi !== undefined ? (cafe.temWifi || data.temWifi) : cafe.temWifi,
         temTomadas: data.temTomadas !== undefined ? (cafe.temTomadas || data.temTomadas) : cafe.temTomadas,
         descricao: data.descricao || cafe.descricao,
@@ -250,12 +262,12 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
     const cafeComLoading = { ...cafeteria, isLoadingDetails: true };
     setSelectedCafeteria(cafeComLoading);
 
-    const cafeEnriquecido = await enrichCafeDetails(cafeteria);
+    const cafeEnriquecido = await enrichCafeDetails(cafeteria, userLat, userLng);
     setSelectedCafeteria(cafeEnriquecido);
 
     // Atualiza também na lista global
     setCafeterias(prev => prev.map(c => c.id === cafeteria.id ? cafeEnriquecido : c));
-  }, []);
+  }, [userLat, userLng]);
 
   // Requisito 1 & 2: Hidratação Silenciosa das Top 15 Cafeterias com Atualização Dinâmica de Estado
   const hidratarLoteTop15 = useCallback(async (topCafes: Cafeteria[], requestId: number) => {
@@ -266,7 +278,7 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
 
       const chunk = topCafes.slice(i, i + CHUNK_SIZE);
       const enrichedChunk = await Promise.all(
-        chunk.map(cafe => enrichCafeDetails(cafe))
+        chunk.map(cafe => enrichCafeDetails(cafe, userLat, userLng))
       );
 
       if (requestId !== batchRequestIdRef.current) break;

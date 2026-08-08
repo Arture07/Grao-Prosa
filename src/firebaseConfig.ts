@@ -60,10 +60,19 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 async function testConnection() {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
+    console.log('[Firebase] Conexão com Cloud Firestore estabelecida com sucesso.');
   } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error('Please check your Firebase configuration.');
+    if (error instanceof Error) {
+      if (
+        error.message.includes('the client is offline') ||
+        error.message.includes('Could not reach Cloud Firestore') ||
+        error.message.includes('unavailable')
+      ) {
+        console.warn('[Firebase] Conexão Firestore operando em modo offline/cache.');
+        return;
+      }
     }
+    console.warn('[Firebase] Teste de conexão Firestore finalizado:', error);
   }
 }
 testConnection();

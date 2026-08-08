@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Grao, CriarDegustacaoDTO, METODOS_PREPARO, NOTAS_SENSORIAIS_SUGERIDAS } from '../types/coffee';
 import { degustacaoRepository } from '../repositories/degustacaoRepository';
 import { graoRepository } from '../repositories/graoRepository';
@@ -55,6 +55,17 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
   const [volumeAguaMl, setVolumeAguaMl] = useState<number>(dadosPrePreenchidos?.aguaMl || 270);
   const [observacoes, setObservacoes] = useState<string>('');
   const [abaterEstoque, setAbaterEstoque] = useState<boolean>(true);
+
+  // Cálculo reativo em tempo real do Ratio (Proporção Café:Água)
+  const ratioCalculado = useMemo(() => {
+    const dose = Number(doseGramas);
+    const agua = Number(volumeAguaMl);
+    if (!dose || !agua || dose <= 0 || agua <= 0 || isNaN(dose) || isNaN(agua)) {
+      return '1:--';
+    }
+    const ratioValor = agua / dose;
+    return `1:${ratioValor.toFixed(1)}`;
+  }, [doseGramas, volumeAguaMl]);
 
   // Estados de salvamento
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -139,6 +150,7 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
         agua?: number;
         descritores?: string[];
         impressoes?: string;
+        ratio?: string;
         criadoEm?: string;
       } = {
         userId: uid,
@@ -154,6 +166,7 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
         dose: Number(doseGramas) || 0,
         volumeAguaMl: Number(volumeAguaMl) || 0,
         agua: Number(volumeAguaMl) || 0,
+        ratio: ratioCalculado,
         observacoes: observacoes.trim(),
         impressoes: observacoes.trim(),
         criadoEm: new Date(data).toISOString()
@@ -184,8 +197,7 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
     return (
       <div className="stamped-border bg-white/80 p-12 text-center space-y-3 max-w-lg mx-auto">
         <Loader2 className="w-8 h-8 text-[#7B1E27] animate-spin mx-auto" />
-        <p className="font-serif text-lg font-semibold text-[#1A1A1A]">Buscando grãos no estoque...</p>
-        <p className="font-sans text-xs text-[#1A1A1A]/60">Sincronizando com o Firebase Firestore.</p>
+        <p className="font-serif text-lg font-semibold text-[#1A1A1A]">Buscando seu histórico...</p>
       </div>
     );
   }
@@ -218,9 +230,6 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
         >
           <ArrowLeft className="w-4 h-4" /> Voltar
         </button>
-        <span className="font-sans text-[10px] uppercase tracking-widest text-[#5A4033] font-semibold">
-          Firebase Firestore • Diário
-        </span>
       </div>
 
       {/* Card do Formulário */}
@@ -235,7 +244,7 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
             <CheckCircle2 className="w-5 h-5 text-emerald-700 shrink-0" />
             <div>
               <p className="font-serif font-semibold text-sm">Degustação Registrada com Sucesso!</p>
-              <p className="font-sans text-xs opacity-80">Registro salvo no Firestore e estoque atualizado.</p>
+              <p className="font-sans text-xs opacity-80">Registro salvo e estoque atualizado.</p>
             </div>
           </div>
         )}
@@ -244,7 +253,7 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
           {/* 1. Seleção do Grão Real */}
           <div className="space-y-2">
             <label className="block text-xs font-bold uppercase tracking-wider text-[#1A1A1A]">
-              1. Selecionar Grão em Estoque (Firestore) *
+              1. Selecionar Grão em Estoque *
             </label>
             <div className="relative">
               <select
@@ -452,6 +461,24 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
               </div>
             </div>
 
+            {/* Indicador Reativo do Ratio (Café:Água) */}
+            <div className="stamped-border bg-[#F5F2ED] p-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="font-sans text-[10px] uppercase font-bold tracking-widest bg-[#1A1A1A] text-[#F5F2ED] px-2 py-0.5">
+                  Proporção Extraída
+                </span>
+                <span className="text-xs text-[#1A1A1A]/70 hidden sm:inline">
+                  Relação Café x Água em tempo real
+                </span>
+              </div>
+              <div className="flex items-baseline gap-1.5 font-serif">
+                <span className="text-xs text-[#5A4033] font-sans uppercase tracking-wider font-semibold">Proporção:</span>
+                <span className="font-bold text-base text-[#1A1A1A] font-mono tracking-tight bg-white px-2 py-0.5 stamped-border">
+                  {ratioCalculado}
+                </span>
+              </div>
+            </div>
+
             {/* Abater Estoque Toggle */}
             <div className="stamped-border bg-amber-50/50 p-3.5 flex items-center justify-between">
               <div>
@@ -502,7 +529,7 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
               {isSubmitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin text-white" />
-                  Salvando no Firestore...
+                  Salvando degustação...
                 </>
               ) : (
                 'Salvar no Diário'

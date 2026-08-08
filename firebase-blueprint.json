@@ -77,6 +77,10 @@
           "type": "string",
           "description": "Notas e impressões sobre a extração"
         },
+        "ratio": {
+          "type": "string",
+          "description": "Proporção de extração Café:Água (ex: 1:15.0)"
+        },
         "nota": {
           "type": "number",
           "description": "Nota dada de 1 a 5"

@@ -145,13 +145,13 @@ export const GraoFormModal: React.FC<GraoFormModalProps> = ({
         <div className="border-b border-[#1A1A1A]/10 pb-2.5 pr-8 shrink-0">
           <div className="flex items-center gap-1.5 text-[#7B1E27] font-semibold text-[10px] uppercase tracking-widest mb-0.5">
             <Sparkles className="w-3 h-3" />
-            <span>Módulo Despensa (Firestore Cloud)</span>
+            <span>Despensa de Cafés</span>
           </div>
           <h3 className="font-serif text-xl sm:text-2xl font-bold text-[#1A1A1A] tracking-tight">
             {graoParaEditar ? 'Editar Grão' : 'Adicionar à Despensa'}
           </h3>
           <p className="font-sans text-[11px] text-[#1A1A1A]/60 mt-0.5 leading-snug">
-            Informe os dados do lote para sincronização na nuvem.
+            Informe os dados do lote de café para o seu estoque.
           </p>
         </div>
 
@@ -298,7 +298,7 @@ export const GraoFormModal: React.FC<GraoFormModalProps> = ({
             {isSubmitting ? (
               <>
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-white" />
-                <span>SALVANDO NA NUVEM...</span>
+                <span>SALVANDO...</span>
               </>
             ) : (
               <>

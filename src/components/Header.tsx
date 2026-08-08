@@ -1,12 +1,11 @@
 import React from 'react';
-import { Coffee, PlusCircle, BookOpen, RefreshCw, Sparkles, Timer, MapPin, LogOut, User as UserIcon } from 'lucide-react';
+import { Coffee, PlusCircle, BookOpen, Sparkles, Timer, MapPin, LogOut, User as UserIcon } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 interface HeaderProps {
   activeTab: 'despensa' | 'nova-degustacao' | 'diario' | 'cronometro' | 'radar';
   setActiveTab: (tab: 'despensa' | 'nova-degustacao' | 'diario' | 'cronometro' | 'radar') => void;
   onOpenNovoGrao: () => void;
-  onResetDatabase: () => void;
 }
 
 export const GraoEProsaLogoIcon: React.FC<{ className?: string }> = ({ className = "w-10 h-10" }) => (
@@ -54,8 +53,7 @@ export const GraoEProsaLogoIcon: React.FC<{ className?: string }> = ({ className
 export const Header: React.FC<HeaderProps> = ({
   activeTab,
   setActiveTab,
-  onOpenNovoGrao,
-  onResetDatabase
+  onOpenNovoGrao
 }) => {
   const { user, logout } = useAuth();
 
@@ -95,15 +93,6 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <PlusCircle className="w-3.5 h-3.5" />
               <span className="hidden xs:inline">Novo Grão</span>
-            </button>
-            
-            <button
-              onClick={onResetDatabase}
-              title="Resetar Dados para Valores de Semente (Seed)"
-              className="px-2.5 py-1.5 bg-transparent hover:bg-black/5 text-[#1A1A1A] font-sans text-xs uppercase tracking-wider stamped-border transition-all flex items-center gap-1 cursor-pointer"
-            >
-              <RefreshCw className="w-3 h-3" />
-              <span className="hidden md:inline">Reset</span>
             </button>
 
             {user && (

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Grao } from '../types/coffee';
 import { graoRepository } from '../repositories/graoRepository';
 import { degustacaoRepository } from '../repositories/degustacaoRepository';
+import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { 
   Coffee, 
   Plus, 
@@ -14,7 +15,8 @@ import {
   MapPin,
   Flame,
   ChevronRight,
-  BookOpen
+  BookOpen,
+  Loader2
 } from 'lucide-react';
 
 interface DespensaViewProps {
@@ -34,53 +36,87 @@ export const DespensaView: React.FC<DespensaViewProps> = ({
   onDegustarGrao,
   onVerHistoricoGrao
 }) => {
+  const [listaGraos, setListaGraos] = useState<Grao[]>(graos);
   const [mediasNotas, setMediasNotas] = useState<Record<string, { media: number; total: number }>>({});
   const [busca, setBusca] = useState('');
   const [deletandoId, setDeletandoId] = useState<string | null>(null);
+  const [itemParaDeletar, setItemParaDeletar] = useState<string | null>(null);
+  const [erroDelete, setErroDelete] = useState<string | null>(null);
+
+  // Sincroniza o estado local quando a prop 'graos' for atualizada no componente pai
+  useEffect(() => {
+    setListaGraos(graos);
+  }, [graos]);
 
   // Carrega as médias de avaliação de cada grão
   useEffect(() => {
     async function carregarMedias() {
       const medias: Record<string, { media: number; total: number }> = {};
-      for (const g of graos) {
-        const stats = await degustacaoRepository.calcularMediaNotaGrao(g.id);
-        medias[g.id] = stats;
+      for (const g of listaGraos) {
+        if (g.id) {
+          const stats = await degustacaoRepository.calcularMediaNotaGrao(g.id);
+          medias[g.id] = stats;
+        }
       }
       setMediasNotas(medias);
     }
-    carregarMedias();
-  }, [graos]);
+    if (listaGraos.length > 0) {
+      carregarMedias();
+    }
+  }, [listaGraos]);
 
-  // Função para deletar um grão do estoque
-  const handleDeletar = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (confirm('Tem certeza que deseja excluir este grão? Todas as degustações associadas a ele também serão removidas do diário.')) {
-      setDeletandoId(id);
-      try {
-        await graoRepository.deletar(id);
-        onRefresh();
-      } catch (err) {
-        console.error('Erro ao deletar grão:', err);
-        alert('Falha ao excluir o grão.');
-      } finally {
-        setDeletandoId(null);
-      }
+  // Função para confirmar e deletar um grão do estoque
+  const handleConfirmarDeletar = async () => {
+    if (!itemParaDeletar) return;
+    const id = itemParaDeletar;
+    setErroDelete(null);
+    setDeletandoId(id);
+
+    console.log('Executando exclusão no Firestore para o ID:', id);
+
+    try {
+      await graoRepository.deletar(id);
+      // Atualiza instantaneamente o estado local APÓS o await ter sucesso
+      setListaGraos(prev => prev.filter(item => item.id !== id));
+      setItemParaDeletar(null);
+      onRefresh();
+    } catch (err: any) {
+      console.error("ERRO FIREBASE:", err?.message || err);
+      setErroDelete(err?.message || 'Erro ao excluir o grão da despensa. Tente novamente.');
+    } finally {
+      setDeletandoId(null);
     }
   };
 
   // Filtragem
-  const graosFiltrados = graos.filter(g => 
+  const graosFiltrados = listaGraos.filter(g => 
     g.nome.toLowerCase().includes(busca.toLowerCase()) ||
     g.torrefacao.toLowerCase().includes(busca.toLowerCase()) ||
     g.origem.toLowerCase().includes(busca.toLowerCase())
   );
 
   // Estatísticas do Estoque
-  const totalEstoqueGramas = graos.reduce((acc, g) => acc + g.quantidadeRestante, 0);
-  const graosBaixoEstoque = graos.filter(g => g.quantidadeRestante <= 50).length;
+  const totalEstoqueGramas = listaGraos.reduce((acc, g) => acc + g.quantidadeRestante, 0);
+  const graosBaixoEstoque = listaGraos.filter(g => g.quantidadeRestante <= 50).length;
 
   return (
     <div className="space-y-8 pb-12">
+      {/* Banner de Erro de Exclusão */}
+      {erroDelete && (
+        <div className="stamped-border bg-red-50 text-red-800 p-3.5 text-xs font-sans flex items-center justify-between border-red-700">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-700 shrink-0" />
+            <span>{erroDelete}</span>
+          </div>
+          <button 
+            onClick={() => setErroDelete(null)}
+            className="text-red-900 font-bold uppercase tracking-wider text-[10px] underline cursor-pointer"
+          >
+            Fechar
+          </button>
+        </div>
+      )}
+
       {/* Title & Section Subtitle */}
       <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-[#1A1A1A]/10 pb-4 gap-2">
         <div>
@@ -101,37 +137,51 @@ export const DespensaView: React.FC<DespensaViewProps> = ({
         </button>
       </div>
 
-      {/* Cards de Resumo do Estoque (Editorial Style) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="stamped-border bg-white/50 p-5 flex items-center justify-between">
-          <div>
-            <p className="font-sans text-[10px] uppercase tracking-widest text-[#1A1A1A]/60 font-semibold">Grãos Cadastrados</p>
-            <p className="font-serif text-3xl font-semibold text-[#1A1A1A] mt-1">{graos.length}</p>
+      {/* Cards de Resumo do Estoque (Refatorado: Lado a lado + Estoque Crítico Condicional) */}
+      <div className="space-y-3">
+        {/* Linha 1: Grãos Cadastrados e Total em Estoque (50% / 50%) */}
+        <div className="flex flex-row gap-3">
+          <div className="flex-1 stamped-border bg-white/50 p-3.5 sm:p-5 flex items-center justify-between min-w-0">
+            <div className="min-w-0">
+              <p className="font-sans text-[9px] sm:text-[10px] uppercase tracking-wider sm:tracking-widest text-[#1A1A1A]/60 font-semibold truncate">
+                Grãos Cadastrados
+              </p>
+              <p className="font-serif text-2xl sm:text-3xl font-semibold text-[#1A1A1A] mt-0.5 sm:mt-1 truncate">
+                {listaGraos.length}
+              </p>
+            </div>
+            <Coffee className="w-5 h-5 sm:w-6 sm:h-6 text-[#5A4033] opacity-60 shrink-0 ml-1.5" />
           </div>
-          <Coffee className="w-6 h-6 text-[#5A4033] opacity-60" />
+
+          <div className="flex-1 stamped-border bg-white/50 p-3.5 sm:p-5 flex items-center justify-between min-w-0">
+            <div className="min-w-0">
+              <p className="font-sans text-[9px] sm:text-[10px] uppercase tracking-wider sm:tracking-widest text-[#1A1A1A]/60 font-semibold truncate">
+                Total em Estoque
+              </p>
+              <p className="font-serif text-2xl sm:text-3xl font-semibold text-[#1A1A1A] mt-0.5 sm:mt-1 truncate">
+                {totalEstoqueGramas >= 1000 
+                  ? `${(totalEstoqueGramas / 1000).toFixed(2)} kg` 
+                  : `${totalEstoqueGramas} g`}
+              </p>
+            </div>
+            <Scale className="w-5 h-5 sm:w-6 sm:h-6 text-[#5A4033] opacity-60 shrink-0 ml-1.5" />
+          </div>
         </div>
 
-        <div className="stamped-border bg-white/50 p-5 flex items-center justify-between">
-          <div>
-            <p className="font-sans text-[10px] uppercase tracking-widest text-[#1A1A1A]/60 font-semibold">Total em Estoque</p>
-            <p className="font-serif text-3xl font-semibold text-[#1A1A1A] mt-1">
-              {totalEstoqueGramas >= 1000 
-                ? `${(totalEstoqueGramas / 1000).toFixed(2)} kg` 
-                : `${totalEstoqueGramas} g`}
-            </p>
+        {/* Linha 2: Estoque Crítico (Omitido completamente do DOM quando graosBaixoEstoque === 0) */}
+        {graosBaixoEstoque > 0 && (
+          <div className="w-full stamped-border bg-red-50/70 border-red-200 p-3.5 sm:p-5 flex items-center justify-between">
+            <div>
+              <p className="font-sans text-[9px] sm:text-[10px] uppercase tracking-wider sm:tracking-widest text-red-900/80 font-bold">
+                Estoque Crítico (≤50g)
+              </p>
+              <p className="font-serif text-2xl sm:text-3xl font-semibold text-red-700 mt-0.5 sm:mt-1">
+                {graosBaixoEstoque} {graosBaixoEstoque === 1 ? 'pacote com pouco café' : 'pacotes com pouco café'}
+              </p>
+            </div>
+            <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6 text-red-700 shrink-0 ml-2" />
           </div>
-          <Scale className="w-6 h-6 text-[#5A4033] opacity-60" />
-        </div>
-
-        <div className={`stamped-border p-5 flex items-center justify-between ${graosBaixoEstoque > 0 ? 'bg-red-50/50' : 'bg-white/50'}`}>
-          <div>
-            <p className="font-sans text-[10px] uppercase tracking-widest text-[#1A1A1A]/60 font-semibold">Estoque Crítico (≤50g)</p>
-            <p className={`font-serif text-3xl font-semibold ${graosBaixoEstoque > 0 ? 'text-red-700' : 'text-[#1A1A1A]'} mt-1`}>
-              {graosBaixoEstoque} {graosBaixoEstoque === 1 ? 'pacote' : 'pacotes'}
-            </p>
-          </div>
-          <AlertTriangle className={`w-6 h-6 ${graosBaixoEstoque > 0 ? 'text-red-700' : 'text-[#1A1A1A]/40'}`} />
-        </div>
+        )}
       </div>
 
       {/* Campo de Pesquisa */}
@@ -200,12 +250,24 @@ export const DespensaView: React.FC<DespensaViewProps> = ({
                         <Edit3 className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={(e) => handleDeletar(grao.id, e)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('Clicou na lixeira. ID recebido:', grao.id);
+                          if (!grao.id) {
+                            throw new Error('ID do documento está indefinido no botão');
+                          }
+                          setItemParaDeletar(grao.id);
+                        }}
                         disabled={deletandoId === grao.id}
                         title="Excluir Grão"
-                        className="p-1.5 text-[#1A1A1A]/40 hover:text-red-700 transition-colors cursor-pointer"
+                        className="p-1.5 text-[#1A1A1A]/40 hover:text-red-700 transition-colors cursor-pointer disabled:opacity-30"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        {deletandoId === grao.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-red-700" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -279,6 +341,16 @@ export const DespensaView: React.FC<DespensaViewProps> = ({
           })}
         </div>
       )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      <ConfirmDeleteModal
+        isOpen={!!itemParaDeletar}
+        titulo="Excluir Grão do Estoque?"
+        mensagem="Tem certeza que deseja excluir este grão? Todas as degustações associadas a ele também serão removidas do diário."
+        isLoading={!!deletandoId}
+        onConfirm={handleConfirmarDeletar}
+        onCancel={() => setItemParaDeletar(null)}
+      />
     </div>
   );
 };

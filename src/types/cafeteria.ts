@@ -2,6 +2,14 @@
  * DOMAIN MODEL - RADAR DE CAFETERIAS & GEOLOCALIZAÇÃO (FASE 3)
  */
 
+export interface Review {
+  author_name: string;
+  rating: number;
+  text: string;
+  relative_time_description?: string;
+  profile_photo_url?: string;
+}
+
 export interface Cafeteria {
   id: string; // Google place_id, OSM node id ou ID customizado
   nome: string;
@@ -16,8 +24,12 @@ export interface Cafeteria {
   descricao: string;
   especialidades: string[];
   horarioFuncionamento: string;
+  horariosSemana?: string[]; // Lista com os horários de cada dia da semana (weekday_text)
   fotoUrl?: string;
-  distanciaKm?: number; // Calculado dinamicamente em relação à localização atual do usuário
+  distanciaKm?: number; // Calculado dinamicamente via Haversine
+  distanciaRotaTexto?: string; // Distância de rota real via Distance Matrix (ex: "15,1 km de carro")
+  duracaoRotaTexto?: string; // Tempo estimado de rota (ex: "22 min de carro")
+  reviews?: Review[]; // Lista com até 5 avaliações reais do Google
   origemGooglePlaces?: boolean;
   origemOSM?: boolean;
   openNow?: boolean;

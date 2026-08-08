@@ -86,6 +86,7 @@ export interface Degustacao {
   agua?: number;              // Alias para volumeAguaMl
   observacoes?: string;       // Notas/Comentários sobre a extração
   impressoes?: string;        // Alias para observacoes
+  ratio?: string;             // Proporção calculada de extração (ex: "1:15.0")
   criadoEm?: string;          // Timestamp ISO de criação
 }
 

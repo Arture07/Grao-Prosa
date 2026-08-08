@@ -55,8 +55,9 @@ export class DegustacaoRepository {
       const degustacoes: Degustacao[] = [];
       querySnapshot.forEach((docSnap) => {
         const data = docSnap.data();
+        const docId = docSnap.id;
         degustacoes.push({
-          id: docSnap.id,
+          id: docId,
           userId: data.userId,
           graoId: data.graoId || '',
           graoNomeSnapshot: data.graoNomeSnapshot || '',
@@ -74,6 +75,7 @@ export class DegustacaoRepository {
             : (Array.isArray(data.descritores) ? data.descritores : []),
           impressoes: data.impressoes || data.observacoes || '',
           observacoes: data.observacoes || data.impressoes || '',
+          ratio: data.ratio || (data.agua && data.dose ? `1:${(data.agua / data.dose).toFixed(1)}` : '1:--'),
           nota: Number(data.nota) || 5,
           criadoEm: data.criadoEm || new Date().toISOString(),
           data: data.data || (data.criadoEm ? data.criadoEm.split('T')[0] : new Date().toISOString().split('T')[0])
@@ -135,6 +137,7 @@ export class DegustacaoRepository {
         notasSensoriais: Array.isArray(data.notasSensoriais) ? data.notasSensoriais : (Array.isArray(data.descritores) ? data.descritores : []),
         impressoes: data.impressoes || data.observacoes || '',
         observacoes: data.observacoes || data.impressoes || '',
+        ratio: data.ratio || (data.agua && data.dose ? `1:${(data.agua / data.dose).toFixed(1)}` : '1:--'),
         nota: Number(data.nota) || 5,
         criadoEm: data.criadoEm || new Date().toISOString(),
         data: data.data || (data.criadoEm ? data.criadoEm.split('T')[0] : new Date().toISOString().split('T')[0])
@@ -159,6 +162,7 @@ export class DegustacaoRepository {
       ? dto.notasSensoriais 
       : (Array.isArray((dto as any).descritores) ? (dto as any).descritores : []);
     const impressoesVal = (dto.observacoes || (dto as any).impressoes || '').trim();
+    const ratioVal = dto.ratio || ((doseVal > 0 && aguaVal > 0) ? `1:${(aguaVal / doseVal).toFixed(1)}` : '1:--');
     const dataVal = dto.data || new Date().toISOString().split('T')[0];
     const criadoEmVal = new Date(dataVal).toISOString();
 
@@ -176,6 +180,7 @@ export class DegustacaoRepository {
       notasSensoriais: descritoresVal,
       impressoes: impressoesVal,
       observacoes: impressoesVal,
+      ratio: ratioVal,
       nota: Math.min(5, Math.max(1, Number(dto.nota) || 5)),
       criadoEm: criadoEmVal,
       data: dataVal
@@ -196,15 +201,13 @@ export class DegustacaoRepository {
   /**
    * Deletar uma degustação do Firestore
    */
-  public async deletar(id: string): Promise<boolean> {
-    try {
-      const docRef = doc(db, this.collectionName, id);
-      await deleteDoc(docRef);
-      return true;
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `${this.collectionName}/${id}`);
-      return false;
+  public async deletar(id: string): Promise<void> {
+    if (!id) {
+      console.error('ID da degustação está indefinido para exclusão:', id);
+      throw new Error('ID do documento está indefinido no botão');
     }
+    const docRef = doc(db, this.collectionName, id);
+    await deleteDoc(docRef);
   }
 
   /**

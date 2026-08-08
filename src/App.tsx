@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Grao, Degustacao } from './types/coffee';
 import { graoRepository } from './repositories/graoRepository';
 import { degustacaoRepository } from './repositories/degustacaoRepository';
-import { dbAdapter } from './database/databaseAdapter';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 
 import { Header } from './components/Header';
@@ -105,15 +104,6 @@ function MainApp() {
     setActiveTab('diario');
   };
 
-  // Ação: Resetar o banco local para valores de exemplo
-  const handleResetDatabase = async () => {
-    if (confirm('Deseja restaurar o banco de dados local para os dados padrão de exemplo (seed)?')) {
-      await dbAdapter.resetDatabase();
-      await carregarDados();
-      alert('Banco de dados resetado com sucesso!');
-    }
-  };
-
   return (
     <div className="min-h-screen bg-stone-100 text-stone-900 font-sans antialiased flex flex-col">
       {/* Header Fixo com Tabs e Botões de Ação */}
@@ -125,7 +115,6 @@ function MainApp() {
           if (tab !== 'diario') setFiltroGraoId(undefined);
         }}
         onOpenNovoGrao={handleOpenNovoGrao}
-        onResetDatabase={handleResetDatabase}
       />
 
       {/* Conteúdo Principal */}
@@ -134,7 +123,7 @@ function MainApp() {
           <div className="flex flex-col items-center justify-center h-64 space-y-3">
             <div className="w-10 h-10 border-4 border-[#7B1E27] border-t-transparent rounded-full animate-spin" />
             <p className="text-xs font-semibold text-stone-500">
-              Sincronizando despensa na nuvem...
+              Buscando sua despensa...
             </p>
           </div>
         ) : (

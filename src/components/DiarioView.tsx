@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Degustacao, Grao } from '../types/coffee';
 import { degustacaoRepository } from '../repositories/degustacaoRepository';
 import { useAuth } from '../hooks/useAuth';
+import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { 
   BookOpen, 
   Star, 
@@ -13,7 +14,8 @@ import {
   Droplet,
   Tag,
   FileText,
-  Loader2
+  Loader2,
+  AlertTriangle
 } from 'lucide-react';
 
 interface DiarioViewProps {
@@ -40,6 +42,8 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
   const [busca, setBusca] = useState('');
   const [metodoFiltro, setMetodoFiltro] = useState<string>('todos');
   const [deletandoId, setDeletandoId] = useState<string | null>(null);
+  const [itemParaDeletar, setItemParaDeletar] = useState<string | null>(null);
+  const [erroDelete, setErroDelete] = useState<string | null>(null);
 
   // Busca real de degustações do usuário no Firebase Firestore
   const carregarDegustacoes = useCallback(async () => {
@@ -61,25 +65,31 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
 
   // Se o componente receber atualização via props, mantém sincronizado
   useEffect(() => {
-    if (degustacoesProp && degustacoesProp.length > 0) {
+    if (degustacoesProp) {
       setListaDegustacoes(degustacoesProp);
     }
   }, [degustacoesProp]);
 
-  // Exclusão real no Firebase Firestore
-  const handleDeletarDegustacao = async (id: string) => {
-    if (confirm('Deseja realmente remover esta nota de degustação do seu diário no Firebase?')) {
-      setDeletandoId(id);
-      try {
-        await degustacaoRepository.deletar(id);
-        await carregarDegustacoes();
-        if (onRefresh) onRefresh();
-      } catch (err) {
-        console.error('Erro ao deletar degustação:', err);
-        alert('Falha ao remover o registro.');
-      } finally {
-        setDeletandoId(null);
-      }
+  // Confirmar e Deletar no Firebase Firestore
+  const handleConfirmarDeletar = async () => {
+    if (!itemParaDeletar) return;
+    const id = itemParaDeletar;
+    setErroDelete(null);
+    setDeletandoId(id);
+
+    console.log('Executando exclusão no Firestore para a degustação ID:', id);
+
+    try {
+      await degustacaoRepository.deletar(id);
+      // Atualização reativa e instantânea do estado local APÓS o await ter sucesso
+      setListaDegustacoes(prev => prev.filter(item => item.id !== id));
+      setItemParaDeletar(null);
+      if (onRefresh) onRefresh();
+    } catch (err: any) {
+      console.error("ERRO FIREBASE:", err?.message || err);
+      setErroDelete(err?.message || 'Erro ao remover a degustação do diário no Firestore. Tente novamente.');
+    } finally {
+      setDeletandoId(null);
     }
   };
 
@@ -117,6 +127,22 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
 
   return (
     <div className="space-y-8 pb-12">
+      {/* Banner de Erro de Exclusão */}
+      {erroDelete && (
+        <div className="stamped-border bg-red-50 text-red-800 p-3.5 text-xs font-sans flex items-center justify-between border-red-700">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-red-700 shrink-0" />
+            <span>{erroDelete}</span>
+          </div>
+          <button 
+            onClick={() => setErroDelete(null)}
+            className="text-red-900 font-bold uppercase tracking-wider text-[10px] underline cursor-pointer"
+          >
+            Fechar
+          </button>
+        </div>
+      )}
+
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-[#1A1A1A]/10 pb-4 gap-2">
         <div>
@@ -124,7 +150,7 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
             03. Diário Sensorial
           </h2>
           <p className="font-sans text-[10px] uppercase tracking-[0.2em] opacity-60 mt-0.5">
-            Sincronizado com Firebase Firestore
+            Histórico de degustações e notas de extração
           </p>
         </div>
 
@@ -181,7 +207,7 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
       {isLoading ? (
         <div className="stamped-border p-12 text-center bg-white/30 space-y-3">
           <Loader2 className="w-8 h-8 text-[#7B1E27] animate-spin mx-auto" />
-          <p className="font-serif text-lg text-[#1A1A1A]">Carregando diário do Firebase...</p>
+          <p className="font-serif text-lg text-[#1A1A1A]">Buscando seu histórico...</p>
         </div>
       ) : degustacoesFiltradas.length === 0 ? (
         <div className="stamped-border p-12 text-center bg-white/30 space-y-3">
@@ -245,7 +271,15 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
                     </div>
 
                     <button
-                      onClick={() => handleDeletarDegustacao(d.id)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Clicou na lixeira. ID recebido:', d.id);
+                        if (!d.id) {
+                          throw new Error('ID do documento está indefinido no botão');
+                        }
+                        setItemParaDeletar(d.id);
+                      }}
                       disabled={deletandoId === d.id}
                       title="Excluir Registro"
                       className="p-1.5 text-[#1A1A1A]/40 hover:text-red-700 transition-colors cursor-pointer disabled:opacity-30"
@@ -273,8 +307,8 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
                       </span>
                     ) : null}
                     {doseExibicao && aguaExibicao ? (
-                      <span className="text-[10px] font-mono opacity-60">
-                        Proporção: 1:{(aguaExibicao / doseExibicao).toFixed(1)}
+                      <span className="text-[10px] font-mono bg-stone-200/60 px-1.5 py-0.5 rounded text-[#1A1A1A] font-semibold">
+                        Proporção: {d.ratio || `1:${(aguaExibicao / doseExibicao).toFixed(1)}`}
                       </span>
                     ) : null}
                   </div>
@@ -311,6 +345,16 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
           })}
         </div>
       )}
+
+      {/* Modal de Confirmação de Exclusão */}
+      <ConfirmDeleteModal
+        isOpen={!!itemParaDeletar}
+        titulo="Excluir Avaliação do Diário?"
+        mensagem="Tem certeza que deseja remover esta nota de degustação do seu diário sensório?"
+        isLoading={!!deletandoId}
+        onConfirm={handleConfirmarDeletar}
+        onCancel={() => setItemParaDeletar(null)}
+      />
     </div>
   );
 };

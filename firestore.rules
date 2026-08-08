@@ -2,6 +2,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    match /test/{docId} {
+      allow read: if true;
+    }
+
     function isValidGrao(data) {
       return data.keys().hasAll(['userId', 'nome', 'quantidadeRestante', 'criadoEm'])
         && data.userId is string
