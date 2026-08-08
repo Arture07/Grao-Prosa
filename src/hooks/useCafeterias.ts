@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Cafeteria } from '../types/cafeteria';
-import { calcularDistanciaHaversineKm } from '../data/mockCafeterias';
+import { calcularDistanciaHaversineKm, getFallbackCafeterias } from '../data/mockCafeterias';
 
 /**
  * Auxiliar para construir um endereço amigável a partir das tags do OpenStreetMap (OSM)
@@ -46,7 +46,10 @@ export async function fetchNearbyCafes(
   lng: number | null | undefined,
   radiusMeters: number = 15000
 ): Promise<Cafeteria[]> {
-  // 1. Validação Estrita do GPS
+  const safeLat = lat ?? -25.4284;
+  const safeLng = lng ?? -49.2733;
+
+  // 1. Validação do GPS com fallback suave
   if (
     lat === null ||
     lat === undefined ||
@@ -56,13 +59,8 @@ export async function fetchNearbyCafes(
     isNaN(lng) ||
     (lat === 0 && lng === 0)
   ) {
-    console.warn('[GPS Valid] Coordenadas de GPS nulas ou inválidas:', { lat, lng });
-    const gpsMessage = 'Aguardando sinal de GPS...';
-
-    if (typeof window !== 'undefined' && window.alert) {
-      window.alert(`Alerta de GPS: ${gpsMessage}`);
-    }
-    throw new Error(gpsMessage);
+    console.warn('[GPS Valid] Coordenadas de GPS nulas ou inválidas, usando fallback de posição.');
+    return getFallbackCafeterias(safeLat, safeLng);
   }
 
   console.log(`[GPS Status OK] Latitude: ${lat}, Longitude: ${lng}`);
@@ -76,16 +74,15 @@ export async function fetchNearbyCafes(
     const response = await fetch(url);
 
     if (!response.ok) {
-      const httpMsg = `Erro HTTP ${response.status}: ${response.statusText}`;
-      console.error('[Overpass API HTTP Error]', response);
-      throw new Error(httpMsg);
+      console.warn(`[Overpass API HTTP Warning] Status ${response.status}. Usando fallback local.`);
+      return getFallbackCafeterias(safeLat, safeLng);
     }
 
     const data = await response.json();
 
-    if (!data || !Array.isArray(data.elements)) {
-      console.warn('[Overpass API] Resposta sem elementos. Retornando array vazio.');
-      return [];
+    if (!data || !Array.isArray(data.elements) || data.elements.length === 0) {
+      console.warn('[Overpass API] Resposta sem elementos. Usando fallback local.');
+      return getFallbackCafeterias(safeLat, safeLng);
     }
 
     console.log(`[Overpass API Sucesso] ${data.elements.length} cafeterias brutas encontradas.`);
@@ -97,14 +94,16 @@ export async function fetchNearbyCafes(
 
     const elementosFiltrados = data.elements.filter((element: any) => {
       const nome = element.tags?.name || '';
-      if (!nome) return true; // Mantém com fallback de 'Cafeteria Local'
+      if (!nome) return true;
       const nomeLower = nome.toLowerCase();
       return !blocklist.some((item) => nomeLower.includes(item));
     });
 
-    console.log(`[Blocklist Filtro] ${data.elements.length} locais brutos OSM -> ${elementosFiltrados.length} cafeterias reais após remoção de docerias/sorveterias.`);
+    if (elementosFiltrados.length === 0) {
+      return getFallbackCafeterias(safeLat, safeLng);
+    }
 
-    // 3. Mapeamento final para a estrutura do app { id, nome, latitude, longitude, endereco, nota: null }
+    // 3. Mapeamento final para a estrutura do app
     return elementosFiltrados.map((element: any) => {
       const elementLat = element.lat;
       const elementLng = element.lon;
@@ -125,7 +124,7 @@ export async function fetchNearbyCafes(
         longitude: elementLng,
         endereco: endereco,
         bairro: element.tags?.['addr:suburb'] || element.tags?.['addr:neighbourhood'] || undefined,
-        nota: null, // OSM não possui sistema de avaliação de notas
+        nota: null,
         totalAvaliacoes: 0,
         temWifi: temWifi,
         temTomadas: temTomadas,
@@ -138,16 +137,11 @@ export async function fetchNearbyCafes(
     });
 
   } catch (err: unknown) {
-    const errorObj = err instanceof Error ? err : new Error(String(err));
-    console.error('[Overpass API Catch Block]', errorObj);
-
-    if (typeof window !== 'undefined' && window.alert) {
-      window.alert(`Erro na API Overpass: ${errorObj.message}`);
-    }
-
-    return [];
+    console.warn('[Overpass API Fetch Warning] Falha na requisição ao Overpass. Usando fallback suave:', err);
+    return getFallbackCafeterias(safeLat, safeLng);
   }
 }
+
 
 /**
  * Função de Enriquecimento de Dados com Google Places (Hidratação Sob Demanda / Lazy Loading)

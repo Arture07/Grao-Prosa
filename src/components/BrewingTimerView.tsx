@@ -12,10 +12,7 @@ import {
   Droplet,
   CheckCircle2,
   Volume2,
-  Smartphone,
-  ChevronRight,
   BookOpen,
-  Info,
   Sliders,
   Scale
 } from 'lucide-react';
@@ -26,7 +23,6 @@ interface BrewingTimerViewProps {
 
 export const BrewingTimerView: React.FC<BrewingTimerViewProps> = ({ onRegistrarDegustacao }) => {
   const [mostrarCalculadora, setMostrarCalculadora] = useState<boolean>(false);
-  const [mostrarGuiaNativo, setMostrarGuiaNativo] = useState<boolean>(false);
 
   // Hook Customizado Engine do Cronômetro
   const timer = useBrewTimer(RECEITAS_PREDEFINIDAS[0]);
@@ -50,64 +46,16 @@ export const BrewingTimerView: React.FC<BrewingTimerViewProps> = ({ onRegistrarD
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center self-start sm:self-auto">
           <button
             onClick={() => setMostrarCalculadora(!mostrarCalculadora)}
-            className="stamped-border bg-white/80 hover:bg-white text-[#1A1A1A] px-3.5 py-2 font-sans text-xs uppercase tracking-wider font-medium flex items-center gap-2 transition-all cursor-pointer"
+            className="stamped-border bg-white/80 hover:bg-white text-[#1A1A1A] px-4 py-2 font-sans text-xs uppercase tracking-wider font-semibold flex items-center gap-2 transition-all cursor-pointer"
           >
             <Sliders className="w-3.5 h-3.5 text-[#5A4033]" />
             {mostrarCalculadora ? 'Ocultar Calculadora' : 'Calculadora Ratio'}
           </button>
-
-          <button
-            onClick={() => setMostrarGuiaNativo(!mostrarGuiaNativo)}
-            className="stamped-border bg-white/80 hover:bg-white text-[#1A1A1A] px-3.5 py-2 font-sans text-xs uppercase tracking-wider font-medium flex items-center gap-2 transition-all cursor-pointer"
-          >
-            <Smartphone className="w-3.5 h-3.5 text-[#5A4033]" />
-            Cuidados Nativos
-          </button>
         </div>
       </div>
-
-      {/* Painel do Guia Nativo e Cuidados de Background (Fase 2 Dev Note) */}
-      {mostrarGuiaNativo && (
-        <div className="stamped-border bg-[#1A1A1A] text-[#F5F2ED] p-6 space-y-4 font-sans text-xs">
-          <div className="flex items-center gap-2 border-b border-[#F5F2ED]/20 pb-3">
-            <Smartphone className="w-5 h-5 text-amber-300" />
-            <h3 className="font-serif text-xl text-[#F5F2ED]">
-              Arquitetura React Native: Cronômetro & Tela Acesas
-            </h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-[11px] leading-relaxed">
-            <div className="border border-[#F5F2ED]/20 p-3 space-y-1 bg-black/30">
-              <span className="text-amber-300 font-bold block font-sans uppercase tracking-wider text-[10px]">
-                1. Date.now() vs setInterval
-              </span>
-              <p className="text-[#F5F2ED]/80 font-sans">
-                O hook calcula a diferença temporal `Date.now() - startTime`. Mesmo que o SO suspenda a thread, o tempo acumulado continuará exato ao reativar.
-              </p>
-            </div>
-
-            <div className="border border-[#F5F2ED]/20 p-3 space-y-1 bg-black/30">
-              <span className="text-amber-300 font-bold block font-sans uppercase tracking-wider text-[10px]">
-                2. Tela LIGADA (Keep Awake)
-              </span>
-              <p className="text-[#F5F2ED]/80 font-sans">
-                Em Expo React Native, importe <code className="text-emerald-300">expo-keep-awake</code> (`useKeepAwake()`) na tela para evitar que o celular apague a tela durante o despejo.
-              </p>
-            </div>
-
-            <div className="border border-[#F5F2ED]/20 p-3 space-y-1 bg-black/30">
-              <span className="text-amber-300 font-bold block font-sans uppercase tracking-wider text-[10px]">
-                3. Haptic & Feedback Sensorial
-              </span>
-              <p className="text-[#F5F2ED]/80 font-sans">
-                Em React Native, <code className="text-emerald-300">Vibration.vibrate([200, 100, 200])</code> aciona o taptic engine nativo do iOS/Android na virada de fase.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Calculadora de Proporção expansível */}
       {mostrarCalculadora && (
