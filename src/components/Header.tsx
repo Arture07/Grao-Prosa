@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Coffee, PlusCircle, BookOpen, Sparkles, Timer, MapPin, LogOut, User as UserIcon } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { ProfileModal } from './ProfileModal';
 
 interface HeaderProps {
   activeTab: 'despensa' | 'nova-degustacao' | 'diario' | 'cronometro' | 'radar';
@@ -56,6 +57,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenNovoGrao
 }) => {
   const { user, logout } = useAuth();
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   return (
     <header className="bg-[#F5F2ED] text-[#1A1A1A] border-b border-[#1A1A1A] pt-4 sm:pt-6 pb-2 sticky top-0 z-30 shadow-xs">
@@ -79,12 +81,16 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Quick Action Buttons & User Profile */}
           <div className="flex items-center gap-2 flex-wrap">
             {user && (
-              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-black/5 text-[#1A1A1A] text-xs rounded-full border border-[#1A1A1A]/10 mr-1">
-                <UserIcon className="w-3 h-3 text-[#7B1E27]" />
-                <span className="truncate max-w-[140px] font-medium text-[11px]">
-                  {user.displayName || user.email?.split('@')[0] || 'Usuário'}
+              <button
+                onClick={() => setIsProfileModalOpen(true)}
+                title="Opções da Conta"
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-full border bg-black/5 hover:bg-black/10 text-[#1A1A1A] border-[#1A1A1A]/10 transition-all cursor-pointer"
+              >
+                <UserIcon className="w-3.5 h-3.5 text-[#7B1E27]" />
+                <span className="truncate max-w-[130px] font-medium text-[11px]">
+                  {user.displayName || user.email?.split('@')[0] || 'Minha Conta'}
                 </span>
-              </div>
+              </button>
             )}
 
             <button
@@ -170,6 +176,12 @@ export const Header: React.FC<HeaderProps> = ({
             05. Radar GPS
           </button>
         </nav>
+
+        {/* Modal de perfil/conta do usuário */}
+        <ProfileModal 
+          isOpen={isProfileModalOpen} 
+          onClose={() => setIsProfileModalOpen(false)} 
+        />
       </div>
     </header>
   );
