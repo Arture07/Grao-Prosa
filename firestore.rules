@@ -3,7 +3,11 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     match /test/{docId} {
-      allow read: if true;
+      allow read: if request.auth != null;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
     }
 
     function isValidGrao(data) {
@@ -26,17 +30,17 @@ service cloud.firestore {
     }
 
     match /graos/{graoId} {
-      allow read, list: if request.auth == null || resource.data.userId == request.auth.uid;
-      allow create: if isValidGrao(request.resource.data) && (request.auth == null || request.resource.data.userId == request.auth.uid);
-      allow update: if isValidGrao(request.resource.data) && (request.auth == null || resource.data.userId == request.auth.uid);
-      allow delete: if request.auth == null || resource.data.userId == request.auth.uid;
+      allow read, list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidGrao(request.resource.data) && request.resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidGrao(request.resource.data) && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
 
     match /degustacoes/{degustacaoId} {
-      allow read, list: if request.auth == null || resource.data.userId == request.auth.uid;
-      allow create: if isValidDegustacao(request.resource.data) && (request.auth == null || request.resource.data.userId == request.auth.uid);
-      allow update: if isValidDegustacao(request.resource.data) && (request.auth == null || resource.data.userId == request.auth.uid);
-      allow delete: if request.auth == null || resource.data.userId == request.auth.uid;
+      allow read, list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidDegustacao(request.resource.data) && request.resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && isValidDegustacao(request.resource.data) && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
 
     match /{document=**} {

@@ -1,12 +1,70 @@
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
+import helmet from 'helmet';
+import cors from 'cors';
+import rateLimit from 'express-rate-limit';
+
+// Sanitização e Validação Rígida de Parâmetros contra Injeção e Manipulação
+function isSuspectInjection(val: unknown): boolean {
+  if (typeof val === 'object' && val !== null) return true; // Bloqueia objetos injetados como {$ne: 1}
+  const str = String(val);
+  // Bloqueia operadores NoSQL, tags de script, injeções SQL e seletores maliciosos
+  if (/(\$ne|\$gt|\$lt|\$gte|\$lte|\$in|\$nin|\$where|\$regex|<script|javascript:|SELECT\s|DROP\s|INSERT\s|DELETE\s|UNION\s)/i.test(str)) {
+    return true;
+  }
+  return false;
+}
+
+function isValidCoordinateString(val: unknown): boolean {
+  if (val === undefined || val === null || val === '') return true; // Opcional
+  if (typeof val === 'object') return false;
+  const str = String(val).trim();
+  if (isSuspectInjection(str)) return false;
+  const coordRegex = /^-?\d+(\.\d+)?$/;
+  if (!coordRegex.test(str)) return false;
+  const num = Number(str);
+  return !isNaN(num) && num >= -180 && num <= 180;
+}
+
+function isValidNameParam(val: unknown): boolean {
+  if (!val || (typeof val !== 'string' && typeof val !== 'number')) return false;
+  if (typeof val === 'object') return false;
+  const str = String(val).trim();
+  if (str.length === 0 || str.length > 250) return false;
+  if (isSuspectInjection(str)) return false;
+  return true;
+}
 
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  // 1. Protection Headers via Helmet
+  app.use(helmet({
+    contentSecurityPolicy: false, // Desabilitado para permitir renderização fluida de mapas Leaflet e HMR do Vite
+  }));
+
+  // 2. Configuração de CORS Restritiva
+  app.use(cors({
+    origin: true,
+    methods: ['GET', 'POST', 'OPTIONS', 'HEAD'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  }));
+
   app.use(express.json());
+
+  // 3. Rate Limiting no endpoint /api/places/details (30 requisições por IP a cada 1 minuto)
+  const placesDetailsLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minuto
+    max: 30, // limite de 30 requisições por IP
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+      status: 'RATE_LIMIT_EXCEEDED',
+      error_message: 'Limite de requisições excedido para consulta de locais. Por favor, aguarde 1 minuto.'
+    }
+  });
 
   // API Proxy para Overpass API (OpenStreetMap)
   // Soluciona a restrição de CORS e bloqueio do navegador chamando a Overpass API server-side
@@ -14,10 +72,16 @@ async function startServer() {
     try {
       const { lat, lng, radius = '15000' } = req.query;
 
-      if (!lat || !lng) {
+      if (
+        isSuspectInjection(lat) ||
+        isSuspectInjection(lng) ||
+        isSuspectInjection(radius) ||
+        !isValidCoordinateString(lat) ||
+        !isValidCoordinateString(lng)
+      ) {
         return res.status(400).json({
           status: 'INVALID_REQUEST',
-          error_message: 'Parâmetros lat e lng são obrigatórios.',
+          error_message: 'Parâmetros lat e lng são obrigatórios e devem ser coordenadas numéricas válidas.',
           elements: []
         });
       }
@@ -158,17 +222,47 @@ async function startServer() {
   });
 
   // API Proxy para Google Places Find Place & Place Details (Hydration On-Demand)
-  app.get('/api/places/details', async (req, res) => {
+  app.get('/api/places/details', placesDetailsLimiter, async (req, res) => {
     try {
       const { name, lat, lng, userLat, userLng } = req.query;
-      const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
-      if (!name || !lat || !lng) {
+      // Sanitização e validação rígida de parâmetros contra injeção e manipulação
+      if (
+        isSuspectInjection(name) ||
+        isSuspectInjection(lat) ||
+        isSuspectInjection(lng) ||
+        isSuspectInjection(userLat) ||
+        isSuspectInjection(userLng)
+      ) {
+        console.warn('[Security Guard] Requisição em /api/places/details rejeitada por suspeita de injeção.');
         return res.status(400).json({
           status: 'INVALID_REQUEST',
-          error_message: 'Parâmetros name, lat e lng são obrigatórios.'
+          error_message: 'Parâmetros com formato inválido, objetos ou operadores não permitidos.'
         });
       }
+
+      if (!isValidNameParam(name) || !isValidCoordinateString(lat) || !isValidCoordinateString(lng)) {
+        return res.status(400).json({
+          status: 'INVALID_REQUEST',
+          error_message: 'Parâmetros name, lat e lng são obrigatórios e devem ter valores válidos.'
+        });
+      }
+
+      if (userLat !== undefined && userLat !== '' && !isValidCoordinateString(userLat)) {
+        return res.status(400).json({
+          status: 'INVALID_REQUEST',
+          error_message: 'Parâmetro userLat possui formato numérico inválido.'
+        });
+      }
+
+      if (userLng !== undefined && userLng !== '' && !isValidCoordinateString(userLng)) {
+        return res.status(400).json({
+          status: 'INVALID_REQUEST',
+          error_message: 'Parâmetro userLng possui formato numérico inválido.'
+        });
+      }
+
+      const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
       console.log(`[Server Places Details Proxy] Buscando detalhes do Google Places para: "${name}" em (${lat}, ${lng})`);
 
@@ -516,6 +610,11 @@ async function startServer() {
   app.get('/api/places/photo', async (req, res) => {
     try {
       const { ref, maxwidth = '600' } = req.query;
+
+      if (isSuspectInjection(ref) || isSuspectInjection(maxwidth)) {
+        return res.status(400).send('Parâmetros de foto inválidos ou suspeitos');
+      }
+
       const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
       if (!ref || !apiKey) {
@@ -552,6 +651,20 @@ async function startServer() {
   app.get('/api/places/nearby', async (req, res) => {
     try {
       const { lat, lng, radius = '15000', type = 'cafe', keyword, pagetoken } = req.query;
+
+      if (
+        isSuspectInjection(lat) ||
+        isSuspectInjection(lng) ||
+        isSuspectInjection(radius) ||
+        isSuspectInjection(keyword) ||
+        isSuspectInjection(pagetoken)
+      ) {
+        return res.status(400).json({
+          status: 'INVALID_REQUEST',
+          error_message: 'Parâmetros contêm formato inválido ou operadores não permitidos.',
+          results: []
+        });
+      }
 
       const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
