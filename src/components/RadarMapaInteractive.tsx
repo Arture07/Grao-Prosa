@@ -187,12 +187,11 @@ export const RadarMapaInteractive: React.FC<RadarMapaInteractiveProps> = ({
     if (mapInstanceRef.current) return;
 
     try {
-      const defaultLat = userLat || -25.4284;
-      const defaultLng = userLng || -49.2733;
+      if (userLat === null || userLng === null) return;
 
       const map = L.map(mapContainerRef.current, {
-        center: [defaultLat, defaultLng],
-        zoom: 12, // Zoom adequado para raio de 15km
+        center: [userLat, userLng],
+        zoom: 14,
         zoomControl: false
       });
 

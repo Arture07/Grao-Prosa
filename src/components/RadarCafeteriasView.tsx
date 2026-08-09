@@ -222,38 +222,77 @@ export const RadarCafeteriasView: React.FC<RadarCafeteriasViewProps> = ({
       {/* Main Content Area (Map or List View) */}
       {modoVisualizacao === 'mapa' ? (
         <div className="relative">
-          {/* Loading Indicator overlay */}
-          {isLoadingApi && (
-            <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] z-30 flex flex-col items-center justify-center rounded-2xl gap-2 transition-all">
-              <div className="p-3 bg-[#3B2314] text-white rounded-full shadow-lg animate-spin">
-                <RefreshCw className="w-6 h-6" />
+          {/* Bloqueio Rígido: Se a localização do usuário for null, exibe tela de carregamento/solicitação de GPS */}
+          {userLat === null || userLng === null ? (
+            carregandoGps || statusPermissao === 'requesting' ? (
+              <div className="w-full h-[450px] sm:h-[550px] bg-[#FAF7F2] rounded-2xl border border-[#1A1A1A]/10 flex flex-col items-center justify-center p-6 text-center shadow-inner animate-fade-in">
+                <div className="p-4 bg-[#3B2314] text-amber-300 rounded-full shadow-lg mb-4 animate-pulse">
+                  <Compass className="w-8 h-8 animate-spin" />
+                </div>
+                <h3 className="text-lg font-bold text-[#1A1A1A] font-serif">
+                  Obtendo sua localização real pelo satélite...
+                </h3>
+                <p className="text-xs text-[#1A1A1A]/70 max-w-md mt-2 leading-relaxed">
+                  Conectando ao sinal de GPS do seu dispositivo para localizar as cafeterias mais próximas e calcular distâncias e rotas reais.
+                </p>
               </div>
-              <span className="text-xs font-bold text-[#3B2314] bg-white px-3 py-1 rounded-full shadow-sm border border-[#1A1A1A]/10">
-                Buscando cafeterias mais próximas...
-              </span>
-            </div>
+            ) : (
+              <div className="w-full h-[450px] sm:h-[550px] bg-[#FAF7F2] rounded-2xl border border-[#1A1A1A]/10 flex flex-col items-center justify-center p-6 text-center shadow-inner animate-fade-in">
+                <div className="p-4 bg-amber-100 text-amber-800 rounded-full mb-4 shadow-sm">
+                  <Navigation className="w-8 h-8" />
+                </div>
+                <h3 className="text-lg font-bold text-[#1A1A1A] font-serif">
+                  Permissão de GPS Necessária
+                </h3>
+                <p className="text-xs text-[#1A1A1A]/70 max-w-md mt-2 leading-relaxed">
+                  {erroMensagem || 'Por favor, autorize o acesso à sua localização no seu navegador ou celular para visualizar o mapa e calcular as rotas exatas.'}
+                </p>
+                <button
+                  onClick={solicitarPermissao}
+                  disabled={carregandoGps}
+                  className="mt-5 inline-flex items-center gap-2 px-6 py-3 bg-[#3B2314] hover:bg-[#2A180C] text-white rounded-xl font-bold text-xs transition-all cursor-pointer shadow-md active:scale-95 disabled:opacity-50"
+                >
+                  <Compass className={`w-4 h-4 ${carregandoGps ? 'animate-spin' : ''}`} />
+                  {carregandoGps ? 'Obtendo Sinal...' : 'Ativar Localização / Permissão de GPS'}
+                </button>
+              </div>
+            )
+          ) : (
+            <>
+              {/* Loading Indicator overlay para requisições do Places/OSM */}
+              {isLoadingApi && (
+                <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] z-30 flex flex-col items-center justify-center rounded-2xl gap-2 transition-all">
+                  <div className="p-3 bg-[#3B2314] text-white rounded-full shadow-lg animate-spin">
+                    <RefreshCw className="w-6 h-6" />
+                  </div>
+                  <span className="text-xs font-bold text-[#3B2314] bg-white px-3 py-1 rounded-full shadow-sm border border-[#1A1A1A]/10">
+                    Buscando cafeterias mais próximas...
+                  </span>
+                </div>
+              )}
+
+              {/* Interactive Leaflet Map - Renderizado APENAS quando userLat e userLng forem válidos */}
+              <RadarMapaInteractive
+                userLat={userLat}
+                userLng={userLng}
+                cafeterias={cafeterias}
+                selectedCafeteria={selectedCafeteria}
+                onSelectCafeteria={selecionarCafeteria}
+                statusPermissao={statusPermissao}
+                onSolicitarPermissao={solicitarPermissao}
+                filtroProdutividade={filtroProdutividade}
+                onToggleProdutividade={() => setFiltroProdutividade(!filtroProdutividade)}
+              />
+
+              {/* Prompt card on top of map to select markers */}
+              <div className="mt-3 p-3 bg-white rounded-xl border border-[#1A1A1A]/10 text-xs text-[#1A1A1A]/70 flex items-center justify-between">
+                <span>
+                  💡 <strong>Dica:</strong> Clique em um marcador para abrir detalhes e traçar rota no seu GPS.
+                </span>
+                <span className="font-bold text-[#3B2314]">{cafeterias.length} locais encontrados</span>
+              </div>
+            </>
           )}
-
-          {/* Interactive Leaflet Map */}
-          <RadarMapaInteractive
-            userLat={userLat}
-            userLng={userLng}
-            cafeterias={cafeterias}
-            selectedCafeteria={selectedCafeteria}
-            onSelectCafeteria={selecionarCafeteria}
-            statusPermissao={statusPermissao}
-            onSolicitarPermissao={solicitarPermissao}
-            filtroProdutividade={filtroProdutividade}
-            onToggleProdutividade={() => setFiltroProdutividade(!filtroProdutividade)}
-          />
-
-          {/* Prompt card on top of map to select markers */}
-          <div className="mt-3 p-3 bg-white rounded-xl border border-[#1A1A1A]/10 text-xs text-[#1A1A1A]/70 flex items-center justify-between">
-            <span>
-              💡 <strong>Dica:</strong> Clique em um marcador para abrir detalhes e traçar rota no seu GPS.
-            </span>
-            <span className="font-bold text-[#3B2314]">{cafeterias.length} locais encontrados</span>
-          </div>
         </div>
       ) : (
         /* List View Mode */
@@ -343,6 +382,7 @@ export const RadarCafeteriasView: React.FC<RadarCafeteriasViewProps> = ({
       {/* Bottom Sheet Card Modal when a cafeteria marker is selected */}
       <CafeteriaCardModal
         cafeteria={selectedCafeteria}
+        userLocation={userLat !== null && userLng !== null ? { lat: userLat, lng: userLng } : null}
         onClose={() => selecionarCafeteria(null)}
         onRegistrarDegustacao={onRegistrarDegustacao}
       />

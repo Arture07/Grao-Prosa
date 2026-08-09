@@ -18,16 +18,18 @@ import {
   Car
 } from 'lucide-react';
 import { Cafeteria } from '../types/cafeteria';
-import { handleOpenRoute as openRouteAction } from '../hooks/useCafeterias';
+import { handleOpenRoute as openRouteAction, UserLocation } from '../hooks/useCafeterias';
 
 interface CafeteriaCardModalProps {
   cafeteria: Cafeteria | null;
+  userLocation?: UserLocation | { lat: number; lng: number } | null;
   onClose: () => void;
   onRegistrarDegustacao?: (cafeteria: Cafeteria) => void;
 }
 
 export const CafeteriaCardModal: React.FC<CafeteriaCardModalProps> = ({
   cafeteria,
+  userLocation,
   onClose,
   onRegistrarDegustacao
 }) => {
@@ -36,7 +38,7 @@ export const CafeteriaCardModal: React.FC<CafeteriaCardModalProps> = ({
   if (!cafeteria) return null;
 
   const handleOpenRoute = () => {
-    openRouteAction(cafeteria);
+    openRouteAction(cafeteria, userLocation);
   };
 
   const hasRouteData = !!cafeteria.distanciaRotaTexto;

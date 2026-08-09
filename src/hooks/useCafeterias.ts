@@ -46,10 +46,7 @@ export async function fetchNearbyCafes(
   lng: number | null | undefined,
   radiusMeters: number = 15000
 ): Promise<Cafeteria[]> {
-  const safeLat = lat ?? -25.4284;
-  const safeLng = lng ?? -49.2733;
-
-  // 1. Validação do GPS com fallback suave
+  // 1. Validação do GPS: se não houver localização válida do usuário, não busca no Overpass
   if (
     lat === null ||
     lat === undefined ||
@@ -59,8 +56,8 @@ export async function fetchNearbyCafes(
     isNaN(lng) ||
     (lat === 0 && lng === 0)
   ) {
-    console.warn('[GPS Valid] Coordenadas de GPS nulas ou inválidas, usando fallback de posição.');
-    return getFallbackCafeterias(safeLat, safeLng);
+    console.warn('[GPS Valid] Coordenadas de GPS não fornecidas.');
+    return [];
   }
 
   console.log(`[GPS Status OK] Latitude: ${lat}, Longitude: ${lng}`);
@@ -75,14 +72,14 @@ export async function fetchNearbyCafes(
 
     if (!response.ok) {
       console.warn(`[Overpass API HTTP Warning] Status ${response.status}. Usando fallback local.`);
-      return getFallbackCafeterias(safeLat, safeLng);
+      return getFallbackCafeterias(lat, lng);
     }
 
     const data = await response.json();
 
     if (!data || !Array.isArray(data.elements) || data.elements.length === 0) {
       console.warn('[Overpass API] Resposta sem elementos. Usando fallback local.');
-      return getFallbackCafeterias(safeLat, safeLng);
+      return getFallbackCafeterias(lat, lng);
     }
 
     console.log(`[Overpass API Sucesso] ${data.elements.length} cafeterias brutas encontradas.`);
@@ -100,7 +97,7 @@ export async function fetchNearbyCafes(
     });
 
     if (elementosFiltrados.length === 0) {
-      return getFallbackCafeterias(safeLat, safeLng);
+      return getFallbackCafeterias(lat, lng);
     }
 
     // 3. Mapeamento final para a estrutura do app
@@ -138,31 +135,52 @@ export async function fetchNearbyCafes(
 
   } catch (err: unknown) {
     console.warn('[Overpass API Fetch Warning] Falha na requisição ao Overpass. Usando fallback suave:', err);
-    return getFallbackCafeterias(safeLat, safeLng);
+    return getFallbackCafeterias(lat, lng);
   }
 }
 
 
 /**
- * Função de Enriquecimento de Dados com Google Places (Hidratação Sob Demanda / Lazy Loading)
- * Disparada apenas quando o usuário clica em uma cafeteria/marcador.
+ * Interface para representar a localização geográfica atual do usuário
+ */
+export interface UserLocation {
+  lat: number;
+  lng: number;
+}
+
+/**
+ * Função de Enriquecimento de Dados com Google Places / Distance Matrix (Hidratação Sob Demanda)
+ * Disparada apenas quando o usuário clica em uma cafeteria/marcador ou lote top 15.
  */
 export async function enrichCafeDetails(
   cafe: Cafeteria,
-  userLat?: number | null,
-  userLng?: number | null
+  userLocation: UserLocation | { lat: number; lng: number } | null | number,
+  userLngParam?: number | null
 ): Promise<Cafeteria> {
   if (!cafe || cafe.enriquecidoGoogle) {
     return { ...cafe, isLoadingDetails: false };
   }
 
+  let uLat: number | null = null;
+  let uLng: number | null = null;
+
+  if (typeof userLocation === 'number') {
+    uLat = userLocation;
+    uLng = userLngParam ?? null;
+  } else if (userLocation && typeof userLocation.lat === 'number' && typeof userLocation.lng === 'number') {
+    uLat = userLocation.lat;
+    uLng = userLocation.lng;
+  }
+
   try {
     let url = `/api/places/details?name=${encodeURIComponent(cafe.nome)}&lat=${cafe.latitude}&lng=${cafe.longitude}`;
-    if (userLat !== null && userLat !== undefined && userLng !== null && userLng !== undefined) {
-      url += `&userLat=${userLat}&userLng=${userLng}`;
+    if (uLat !== null && uLng !== null && !isNaN(uLat) && !isNaN(uLng)) {
+      url += `&userLat=${uLat}&userLng=${uLng}`;
     }
-    console.log(`[enrichCafeDetails] Disparando hidratação Google Places para ${cafe.nome}...`);
-    const res = await fetch(url);
+    url += `&timestamp=${Date.now()}`;
+
+    console.log(`[enrichCafeDetails] Disparando hidratação Google Places com cache-busting para "${cafe.nome}" com origins GPS: (${uLat}, ${uLng})...`);
+    const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) {
       return { ...cafe, isLoadingDetails: false, enriquecidoGoogle: true, dadosComunidade: true };
     }
@@ -196,26 +214,35 @@ export async function enrichCafeDetails(
 }
 
 /**
- * Traçar Rota com Deep Linking Humanizado (Etiquetas de Coordenadas)
+ * Traçar Rota com Deep Linking Humanizado (Etiquetas de Coordenadas e Origem do GPS)
  * Evita exibir coordenadas cruas para o usuário final no aplicativo de mapas.
  */
-export function handleOpenRoute(cafe: Cafeteria) {
+export function handleOpenRoute(
+  cafe: Cafeteria,
+  userLocation?: UserLocation | { lat: number; lng: number } | null
+) {
   if (!cafe) return;
 
   const { latitude: lat, longitude: lng, nome } = cafe;
   const nomeEncoded = encodeURIComponent(nome);
 
+  const hasOrigin = userLocation && typeof userLocation.lat === 'number' && typeof userLocation.lng === 'number';
+  const originStr = hasOrigin ? `${userLocation.lat},${userLocation.lng}` : '';
+
   let url = '';
 
   if (typeof navigator !== 'undefined' && /iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-    // iOS / Apple Maps: http://maps.apple.com/?ll=lat,lng&q=Nome
-    url = `http://maps.apple.com/?ll=${lat},${lng}&q=${nomeEncoded}`;
+    url = hasOrigin 
+      ? `http://maps.apple.com/?saddr=${originStr}&daddr=${lat},${lng}&q=${nomeEncoded}`
+      : `http://maps.apple.com/?ll=${lat},${lng}&q=${nomeEncoded}`;
   } else if (typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent)) {
-    // Android Intent: geo:0,0?q=lat,lng(Nome)
-    url = `geo:0,0?q=${lat},${lng}(${nomeEncoded})`;
+    url = hasOrigin
+      ? `https://www.google.com/maps/dir/?api=1&origin=${originStr}&destination=${lat},${lng}`
+      : `geo:0,0?q=${lat},${lng}(${nomeEncoded})`;
   } else {
-    // Web / Google Maps Fallback
-    url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}(${nomeEncoded})`;
+    url = hasOrigin
+      ? `https://www.google.com/maps/dir/?api=1&origin=${originStr}&destination=${lat},${lng}`
+      : `https://www.google.com/maps/search/?api=1&query=${lat},${lng}(${nomeEncoded})`;
   }
 
   if (typeof window !== 'undefined') {
@@ -228,6 +255,15 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
   const [isLoadingApi, setIsLoadingApi] = useState<boolean>(false);
   const [errorApi, setErrorApi] = useState<string | null>(null);
   const [selectedCafeteria, setSelectedCafeteria] = useState<Cafeteria | null>(null);
+
+  // Ref para manter as coordenadas mais recentes do usuário e evitar closures obsoletas
+  const userLatRef = useRef<number | null>(userLat);
+  const userLngRef = useRef<number | null>(userLng);
+
+  useEffect(() => {
+    userLatRef.current = userLat;
+    userLngRef.current = userLng;
+  }, [userLat, userLng]);
 
   // Ref para controle de concorrência e descarte de buscas antigas
   const batchRequestIdRef = useRef<number>(0);
@@ -256,7 +292,14 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
     const cafeComLoading = { ...cafeteria, isLoadingDetails: true };
     setSelectedCafeteria(cafeComLoading);
 
-    const cafeEnriquecido = await enrichCafeDetails(cafeteria, userLat, userLng);
+    const currentLat = userLat ?? userLatRef.current;
+    const currentLng = userLng ?? userLngRef.current;
+
+    const userLocationObj = (currentLat !== null && currentLng !== null && !isNaN(currentLat) && !isNaN(currentLng))
+      ? { lat: currentLat, lng: currentLng }
+      : null;
+
+    const cafeEnriquecido = await enrichCafeDetails(cafeteria, userLocationObj);
     setSelectedCafeteria(cafeEnriquecido);
 
     // Atualiza também na lista global
@@ -264,15 +307,32 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
   }, [userLat, userLng]);
 
   // Requisito 1 & 2: Hidratação Silenciosa das Top 15 Cafeterias com Atualização Dinâmica de Estado
-  const hidratarLoteTop15 = useCallback(async (topCafes: Cafeteria[], requestId: number) => {
+  const hidratarLoteTop15 = useCallback(async (
+    topCafes: Cafeteria[],
+    requestId: number,
+    targetLat?: number | null,
+    targetLng?: number | null
+  ) => {
     const CHUNK_SIZE = 3; // Lote de 3 requisições paralelas para proteger a API contra Rate Limits
+
+    const effLat = targetLat ?? userLat ?? userLatRef.current;
+    const effLng = targetLng ?? userLng ?? userLngRef.current;
+
+    const userLocationObj = (effLat !== null && effLng !== null && !isNaN(effLat) && !isNaN(effLng))
+      ? { lat: effLat, lng: effLng }
+      : null;
+
+    if (!userLocationObj) {
+      console.warn('[hidratarLoteTop15] Localização do usuário indisponível. Abortando hidratação em lote.');
+      return;
+    }
 
     for (let i = 0; i < topCafes.length; i += CHUNK_SIZE) {
       if (requestId !== batchRequestIdRef.current) break;
 
       const chunk = topCafes.slice(i, i + CHUNK_SIZE);
       const enrichedChunk = await Promise.all(
-        chunk.map(cafe => enrichCafeDetails(cafe, userLat, userLng))
+        chunk.map(cafe => enrichCafeDetails(cafe, userLocationObj))
       );
 
       if (requestId !== batchRequestIdRef.current) break;
@@ -296,7 +356,7 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
         return match ? { ...match, isLoadingDetails: false } : currentSelected;
       });
     }
-  }, []);
+  }, [userLat, userLng]);
 
   // Busca cafeterias via Overpass API (OSM) e inicia pré-carregamento em lote
   const carregarCafeteriasOSM = useCallback(async (lat: number | null, lng: number | null) => {
@@ -327,7 +387,7 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
 
       // Requisito 1: Seleciona as 15 cafeterias mais próximas e dispara a hidratação em segundo plano
       const top15 = comDistancia.slice(0, 15);
-      hidratarLoteTop15(top15, requestId);
+      hidratarLoteTop15(top15, requestId, lat, lng);
 
     } catch (err: unknown) {
       if (requestId !== batchRequestIdRef.current) return;
@@ -343,10 +403,12 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
 
   // Efeito disparado quando a latitude ou longitude do GPS muda
   useEffect(() => {
-    const defaultLat = userLat ?? -25.4284;
-    const defaultLng = userLng ?? -49.2733;
+    if (userLat === null || userLng === null || isNaN(userLat) || isNaN(userLng)) {
+      setCafeterias([]);
+      return;
+    }
 
-    carregarCafeteriasOSM(defaultLat, defaultLng);
+    carregarCafeteriasOSM(userLat, userLng);
   }, [userLat, userLng, carregarCafeteriasOSM]);
 
   // Cafeterias processadas com filtros
@@ -387,9 +449,9 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
   }, [cafeterias, userLat, userLng, filtroWifi, filtroTomadas, filtroProdutividade, filtroNotaMin, termoBusca]);
 
   const recarregar = () => {
-    const defaultLat = userLat ?? -25.4284;
-    const defaultLng = userLng ?? -49.2733;
-    carregarCafeteriasOSM(defaultLat, defaultLng);
+    if (userLat !== null && userLng !== null && !isNaN(userLat) && !isNaN(userLng)) {
+      carregarCafeteriasOSM(userLat, userLng);
+    }
   };
 
   return {
