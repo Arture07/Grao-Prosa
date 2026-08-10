@@ -54,9 +54,7 @@ export function useBrewTimer(receitaInicial: ReceitaCafe, doseCafeG: number = re
   const tempoTotalSegundos = etapasEscaladas.reduce((acc, e) => acc + e.duracaoSegundos, 0);
 
   // Função para acionar a vibração e feedback sonoro ao mudar de fase
-  const dispararFeedbackFase = useCallback((nomeEtapa: string) => {
-    console.log(`[BrewTimer] Iniciando Fase: ${nomeEtapa}`);
-
+  const dispararFeedbackFase = useCallback((_nomeEtapa: string) => {
     // 1. Vibração Nativa (React Native / Web API)
     try {
       if (typeof window !== 'undefined' && 'navigator' in window && window.navigator.vibrate) {

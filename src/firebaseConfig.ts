@@ -60,7 +60,6 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
 async function testConnection() {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
-    console.log('[Firebase] Conexão com Cloud Firestore estabelecida com sucesso.');
   } catch (error) {
     if (error instanceof Error) {
       if (

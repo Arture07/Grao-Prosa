@@ -77,8 +77,6 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
     setErroDelete(null);
     setDeletandoId(id);
 
-    console.log('Executando exclusão no Firestore para a degustação ID:', id);
-
     try {
       await degustacaoRepository.deletar(id);
       // Atualização reativa e instantânea do estado local APÓS o await ter sucesso
@@ -274,7 +272,6 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log('Clicou na lixeira. ID recebido:', d.id);
                         if (!d.id) {
                           throw new Error('ID do documento está indefinido no botão');
                         }

@@ -60,12 +60,8 @@ export async function fetchNearbyCafes(
     return [];
   }
 
-  console.log(`[GPS Status OK] Latitude: ${lat}, Longitude: ${lng}`);
-
   // Chama o backend proxy local para evitar restrições de CORS/rede no navegador
   const url = `/api/overpass/cafes?lat=${lat}&lng=${lng}&radius=${radiusMeters}`;
-
-  console.log(`[Overpass API Proxy Call] Disparando requisição ao servidor proxy: ${url}`);
 
   try {
     const response = await fetch(url);
@@ -81,8 +77,6 @@ export async function fetchNearbyCafes(
       console.warn('[Overpass API] Resposta sem elementos. Usando fallback local.');
       return getFallbackCafeterias(lat, lng);
     }
-
-    console.log(`[Overpass API Sucesso] ${data.elements.length} cafeterias brutas encontradas.`);
 
     // 2. Blocklist para remover estabelecimentos indesejados (sorveterias, docerias, açaís, etc.)
     const blocklist = [
@@ -179,7 +173,6 @@ export async function enrichCafeDetails(
     }
     url += `&timestamp=${Date.now()}`;
 
-    console.log(`[enrichCafeDetails] Disparando hidratação Google Places com cache-busting para "${cafe.nome}" com origins GPS: (${uLat}, ${uLng})...`);
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) {
       return { ...cafe, isLoadingDetails: false, enriquecidoGoogle: true, dadosComunidade: true };

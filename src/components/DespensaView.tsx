@@ -72,8 +72,6 @@ export const DespensaView: React.FC<DespensaViewProps> = ({
     setErroDelete(null);
     setDeletandoId(id);
 
-    console.log('Executando exclusão no Firestore para o ID:', id);
-
     try {
       await graoRepository.deletar(id);
       // Atualiza instantaneamente o estado local APÓS o await ter sucesso
@@ -253,7 +251,6 @@ export const DespensaView: React.FC<DespensaViewProps> = ({
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          console.log('Clicou na lixeira. ID recebido:', grao.id);
                           if (!grao.id) {
                             throw new Error('ID do documento está indefinido no botão');
                           }

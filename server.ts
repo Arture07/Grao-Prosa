@@ -40,6 +40,9 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  // Habilita suporte a proxy reverso para identificar corretamente o IP em ambientes como Cloud Run / Nginx
+  app.set('trust proxy', 1);
+
   // 1. Protection Headers via Helmet
   app.use(helmet({
     contentSecurityPolicy: false, // Desabilitado para permitir renderização fluida de mapas Leaflet e HMR do Vite
@@ -86,8 +89,6 @@ async function startServer() {
         });
       }
 
-      console.log(`[Server Overpass Proxy] Buscando cafeterias no OSM para lat: ${lat}, lng: ${lng}, radius: ${radius}m`);
-
       const query = `[out:json][timeout:25];(node["amenity"="cafe"](around:${radius},${lat},${lng}););out center;`;
       
       const endpoints = [
@@ -102,7 +103,6 @@ async function startServer() {
       for (const endpoint of endpoints) {
         try {
           const url = `${endpoint}?data=${encodeURIComponent(query)}`;
-          console.log(`[Server Overpass Proxy] Tentando endpoint: ${endpoint}`);
           const osmRes = await fetch(url, {
             headers: {
               'User-Agent': 'GraoEProsa/1.0 (Coffee Explorer App)'
@@ -112,7 +112,6 @@ async function startServer() {
           if (osmRes.ok) {
             data = await osmRes.json();
             if (data && Array.isArray(data.elements)) {
-              console.log(`[Server Overpass Proxy Sucesso] Endpoint ${endpoint} retornou ${data.elements.length} elementos.`);
               return res.json(data);
             }
           } else {
@@ -264,8 +263,6 @@ async function startServer() {
 
       const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
-      console.log(`[Server Places Details Proxy] Buscando detalhes do Google Places para: "${name}" em (${lat}, ${lng})`);
-
       // Conversão direta e robusta de coordenadas do usuário
       const uLatVal = req.query.userLat ? Number(req.query.userLat) : NaN;
       const uLngVal = req.query.userLng ? Number(req.query.userLng) : NaN;
@@ -273,8 +270,6 @@ async function startServer() {
 
       // Função auxiliar para calcular/buscar distância de rota via Routes API (New) ou Distance Matrix API (Legacy) ou Haversine
       const calcRouteDistance = async () => {
-        console.log('Backend recebeu GPS:', { userLat, userLng, uLatVal, uLngVal, valid: userLocationValid });
-
         // Validação Rígida: se não houver coordenadas reais do usuário, NÃO chama API de rota e NÃO gera rota falsa
         if (!userLocationValid || !lat || !lng) return null;
 
@@ -308,7 +303,6 @@ async function startServer() {
                 const distKm = (route.distanceMeters / 1000).toFixed(1).replace('.', ',');
                 const durSec = parseInt(String(route.duration || '0').replace('s', ''), 10) || 0;
                 const durMin = Math.max(1, Math.round(durSec / 60));
-                console.log(`[Routes API v2 Success] ${distKm} km, ${durMin} min`);
                 return {
                   distanciaRotaTexto: `${distKm} km de carro`,
                   duracaoRotaTexto: `${durMin} min de carro`
@@ -436,7 +430,6 @@ async function startServer() {
           const newPlacesData = await newPlacesRes.json();
           const place = newPlacesData.places?.[0];
           if (place) {
-            console.log(`[Places API v1 New Success] Encontrado: ${place.displayName?.text || name}`);
             const photoName = place.photos?.[0]?.name;
             const fotoUrl = photoName ? `/api/places/photo?ref=${encodeURIComponent(photoName)}` : undefined;
             const openNow = place.regularOpeningHours?.openNow ?? true;
@@ -494,7 +487,6 @@ async function startServer() {
       }
 
       if (!placeId) {
-        console.log(`[Server Places Details Proxy] Nenhum place_id correspondente encontrado no Google Places para "${name}".`);
         return res.json({
           status: 'NOT_FOUND',
           nota: 4.5,
@@ -679,7 +671,6 @@ async function startServer() {
 
       let googleUrl = '';
       if (pagetoken) {
-        console.log(`[Server API Proxy] Buscando próxima página com pagetoken...`);
         googleUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?pagetoken=${encodeURIComponent(String(pagetoken))}&key=${apiKey}`;
       } else {
         if (!lat || !lng) {
@@ -689,7 +680,6 @@ async function startServer() {
             results: []
           });
         }
-        console.log(`[Server API Proxy] Buscando cafeterias para lat: ${lat}, lng: ${lng}, radius: ${radius}m, type: ${type}, keyword: ${keyword || 'nenhuma'}`);
         googleUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&type=${type}&key=${apiKey}`;
         if (keyword) {
           googleUrl += `&keyword=${encodeURIComponent(String(keyword))}`;
@@ -708,7 +698,6 @@ async function startServer() {
       }
 
       const data = await googleRes.json();
-      console.log(`[Server API Proxy Response] Status: ${data.status}, Encontrados: ${data.results?.length || 0}, NextToken: ${data.next_page_token ? 'SIM' : 'NÃO'}`);
       
       return res.json(data);
     } catch (error: unknown) {
@@ -738,7 +727,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Servidor rodando em http://0.0.0.0:${PORT}`);
+    // Servidor pronto na porta 3000
   });
 }
 
