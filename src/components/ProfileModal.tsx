@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 import { deleteUser } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
 import { 
@@ -8,6 +9,7 @@ import {
   Trash2, 
   Mail, 
   AlertTriangle,
+  Smartphone,
   X
 } from 'lucide-react';
 
@@ -18,6 +20,7 @@ interface ProfileModalProps {
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
   const { user, logout } = useAuth();
+  const { isInstallable, installApp } = usePWAInstall();
 
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -114,6 +117,20 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) =
 
         {/* Botões Principais de Ação */}
         <div className="space-y-2 pt-1">
+          {/* Botão de Instalação PWA se disponível */}
+          {isInstallable && (
+            <button
+              onClick={() => {
+                installApp();
+                onClose();
+              }}
+              className="w-full py-2.5 bg-[#5A4033] hover:bg-[#3D2B22] text-[#FAF7F2] font-sans text-xs uppercase tracking-wider font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+            >
+              <Smartphone className="w-4 h-4" />
+              Adicionar na tela de início
+            </button>
+          )}
+
           {/* Botão Sair da Conta */}
           <button
             onClick={handleLogout}

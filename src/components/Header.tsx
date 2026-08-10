@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Coffee, PlusCircle, BookOpen, Sparkles, Timer, MapPin, LogOut, User as UserIcon } from 'lucide-react';
+import { Coffee, PlusCircle, BookOpen, Sparkles, Timer, MapPin, LogOut, User as UserIcon, Smartphone } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 import { ProfileModal } from './ProfileModal';
 
 interface HeaderProps {
@@ -57,6 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenNovoGrao
 }) => {
   const { user, logout } = useAuth();
+  const { isInstallable, installApp } = usePWAInstall();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   return (
@@ -80,6 +82,18 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Quick Action Buttons & User Profile */}
           <div className="flex items-center gap-2 flex-wrap">
+            {isInstallable && (
+              <button
+                onClick={installApp}
+                title="Adicionar na tela de início"
+                className="px-2.5 py-1.5 bg-[#5A4033] hover:bg-[#3D2B22] text-[#FAF7F2] font-sans text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-1.5 cursor-pointer rounded-none shadow-xs"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Adicionar na tela de início</span>
+                <span className="sm:hidden">Instalar</span>
+              </button>
+            )}
+
             {user && (
               <button
                 onClick={() => setIsProfileModalOpen(true)}
