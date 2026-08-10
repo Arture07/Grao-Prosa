@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
@@ -55,25 +55,5 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   console.error('Firestore Error: ', JSON.stringify(errInfo));
   throw new Error(JSON.stringify(errInfo));
 }
-
-// Validation check on boot
-async function testConnection() {
-  try {
-    await getDocFromServer(doc(db, 'test', 'connection'));
-  } catch (error) {
-    if (error instanceof Error) {
-      if (
-        error.message.includes('the client is offline') ||
-        error.message.includes('Could not reach Cloud Firestore') ||
-        error.message.includes('unavailable')
-      ) {
-        console.warn('[Firebase] Conexão Firestore operando em modo offline/cache.');
-        return;
-      }
-    }
-    console.warn('[Firebase] Teste de conexão Firestore finalizado:', error);
-  }
-}
-testConnection();
 
 export default app;
