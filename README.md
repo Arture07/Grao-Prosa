@@ -5,7 +5,6 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-38bdf8)
 ![Firebase](https://img.shields.io/badge/Firebase-Auth%20%26%20Firestore-ffca28)
-![License](https://img.shields.io/badge/licen%C3%A7a-MIT-green)
 
 O **Grão & Prosa** é uma aplicação web progressiva (PWA) de alta performance desenvolvida para entusiastas, degustadores e baristas de cafés especiais. A plataforma resolve o desafio da gestão precisa de estoque de grãos de origem controlada, eliminando perdas e rastreando métricas sutilíssimas de extração (moagem, temperatura, proporção e tempo de infusão). Além de registrar diários sensoriais com roda de descritores e avaliações, o aplicativo oferece um assistente de vertido interativo e mapeamento geoespacial em tempo real para descoberta de cafeterias de especialidade.
 
