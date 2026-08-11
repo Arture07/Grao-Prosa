@@ -149,8 +149,8 @@ grao-e-prosa/
 
 Desenvolvido por **[Artur Kuzma Marques]**.
 
-- 💼 **LinkedIn:** [linkedin.com/in/seu-perfil](https://www.linkedin.com/in/devarturkuzmamarques/)
-- 🐙 **GitHub:** [github.com/seu-usuario](https://github.com/Arture07)
-- ✉️ **E-mail:** [seu.email@exemplo.com](mailto:akmarques03@gmail.com)
+- 💼 **LinkedIn:** [linkedin.com/in/devarturkuzmamarques/](https://www.linkedin.com/in/devarturkuzmamarques/)
+- 🐙 **GitHub:** [https://github.com/Arture07](https://github.com/Arture07)
+- ✉️ **E-mail:** [akmarques03@gmail.com](mailto:akmarques03@gmail.com)
 
 ---
