@@ -4,6 +4,7 @@ import {
   onAuthStateChanged, 
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendEmailVerification,
   signOut,
   updateProfile
 } from 'firebase/auth';
@@ -17,6 +18,7 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<void>;
   register: (email: string, pass: string, name?: string) => Promise<void>;
   logout: () => Promise<void>;
+  reloadUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -60,7 +62,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.warn('Erro ao atualizar nome do perfil:', pErr);
       }
     }
+    if (cred.user) {
+      try {
+        await sendEmailVerification(cred.user);
+      } catch (eErr) {
+        console.warn('Erro ao enviar e-mail de verificação:', eErr);
+      }
+    }
     setUser(cred.user);
+  };
+
+  const reloadUser = async () => {
+    if (auth.currentUser) {
+      await auth.currentUser.reload();
+      setUser({ ...auth.currentUser });
+    }
   };
 
   const logout = async () => {
@@ -79,6 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         register,
         logout,
+        reloadUser,
       }}
     >
       {children}

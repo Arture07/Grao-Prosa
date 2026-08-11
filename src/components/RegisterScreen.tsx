@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
+import { sendEmailVerification, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { auth } from '../firebaseConfig';
 import { Coffee, User, Mail, Lock, Loader2, ArrowLeft, Sparkles } from 'lucide-react';
 
 interface RegisterScreenProps {
@@ -7,8 +8,6 @@ interface RegisterScreenProps {
 }
 
 export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogin }) => {
-  const { register } = useAuth();
-
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,6 +28,14 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
     return 'Erro ao criar conta. Verifique os dados informados e tente novamente.';
   };
 
+  const validatePasswordStrength = (pwd: string): boolean => {
+    const hasMinLength = pwd.length >= 6;
+    const hasUppercase = /[A-Z]/.test(pwd);
+    const hasNumber = /\d/.test(pwd);
+    const hasSpecialChar = /[@$!%*?&._\-[#\]{}()+=~^\\/|:;"'<>,]/.test(pwd);
+    return hasMinLength && hasUppercase && hasNumber && hasSpecialChar;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -45,15 +52,30 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
       setErrorMessage('Por favor, crie uma senha.');
       return;
     }
-    if (password.length < 6) {
-      setErrorMessage('A senha deve ter pelo menos 6 caracteres.');
+    if (!validatePasswordStrength(password)) {
+      setErrorMessage('A senha deve ter no mínimo 6 caracteres, contendo pelo menos uma letra maiúscula, um número e um caractere especial.');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      await register(email, password, nome);
+      // 1. Cria conta do usuário com e-mail e senha
+      const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+
+      // 2. Atualiza nome do perfil se informado
+      if (nome.trim() && userCredential.user) {
+        try {
+          await updateProfile(userCredential.user, { displayName: nome.trim() });
+        } catch (pErr) {
+          console.warn('Erro ao atualizar nome do perfil:', pErr);
+        }
+      }
+
+      // 3. Imediatamente após o sucesso do cadastro, envia o e-mail de verificação
+      if (userCredential.user) {
+        await sendEmailVerification(userCredential.user);
+      }
     } catch (err: any) {
       console.error('Erro de cadastro:', err);
       setErrorMessage(translateError(err));
@@ -103,13 +125,12 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
             <input
               type="text"
               disabled={isLoading}
-              placeholder="Ex: Ana Silva"
               value={nome}
               onChange={(e) => {
                 setNome(e.target.value);
                 if (errorMessage) setErrorMessage(null);
               }}
-              className="w-full bg-transparent border-b border-[#1A1A1A]/25 focus:border-[#7B1E27] px-1 py-1.5 text-xs sm:text-sm text-[#1A1A1A] focus:outline-none transition-colors rounded-none placeholder:text-[#1A1A1A]/35 disabled:opacity-50"
+              className="w-full bg-transparent border-b border-[#1A1A1A]/25 focus:border-[#7B1E27] px-1 py-1.5 text-xs sm:text-sm text-[#1A1A1A] focus:outline-none transition-colors rounded-none disabled:opacity-50"
             />
           </div>
 
@@ -122,13 +143,12 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
             <input
               type="email"
               disabled={isLoading}
-              placeholder="seu.email@exemplo.com"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
                 if (errorMessage) setErrorMessage(null);
               }}
-              className="w-full bg-transparent border-b border-[#1A1A1A]/25 focus:border-[#7B1E27] px-1 py-1.5 text-xs sm:text-sm text-[#1A1A1A] focus:outline-none transition-colors rounded-none placeholder:text-[#1A1A1A]/35 disabled:opacity-50"
+              className="w-full bg-transparent border-b border-[#1A1A1A]/25 focus:border-[#7B1E27] px-1 py-1.5 text-xs sm:text-sm text-[#1A1A1A] focus:outline-none transition-colors rounded-none disabled:opacity-50"
             />
           </div>
 
@@ -136,19 +156,21 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ onNavigateToLogi
           <div className="space-y-1">
             <label className="block text-[10px] font-bold uppercase tracking-wider text-[#1A1A1A]/70 flex items-center gap-1">
               <Lock className="w-3 h-3 text-[#7B1E27]" />
-              <span>Senha (mínimo 6 caracteres) *</span>
+              <span>Senha *</span>
             </label>
             <input
               type="password"
               disabled={isLoading}
-              placeholder="••••••••"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
                 if (errorMessage) setErrorMessage(null);
               }}
-              className="w-full bg-transparent border-b border-[#1A1A1A]/25 focus:border-[#7B1E27] px-1 py-1.5 text-xs sm:text-sm text-[#1A1A1A] focus:outline-none transition-colors rounded-none placeholder:text-[#1A1A1A]/35 disabled:opacity-50"
+              className="w-full bg-transparent border-b border-[#1A1A1A]/25 focus:border-[#7B1E27] px-1 py-1.5 text-xs sm:text-sm text-[#1A1A1A] focus:outline-none transition-colors rounded-none disabled:opacity-50"
             />
+            <p className="text-[10px] text-[#1A1A1A]/60 pt-0.5 leading-tight">
+              A senha deve conter: mín. 6 caracteres, letra maiúscula, número e símbolo.
+            </p>
           </div>
 
           {/* Mensagem Elegante de Erro */}

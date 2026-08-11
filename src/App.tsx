@@ -14,6 +14,7 @@ import { RadarCafeteriasView } from './components/RadarCafeteriasView';
 import { GraoFormModal } from './components/GraoFormModal';
 import { LoginScreen } from './components/LoginScreen';
 import { RegisterScreen } from './components/RegisterScreen';
+import { VerifyEmailScreen } from './components/VerifyEmailScreen';
 import { Wifi, WifiOff, RefreshCw } from 'lucide-react';
 
 function MainApp() {
@@ -183,6 +184,11 @@ function MainApp() {
       return <LoginScreen onNavigateToRegister={() => setAuthView('register')} />;
     }
     return <RegisterScreen onNavigateToLogin={() => setAuthView('login')} />;
+  }
+
+  // Trava de Roteamento Global: Se o usuário estiver logado, MAS user.emailVerified === false, renderiza exclusivamente <VerifyEmailScreen />
+  if (!user.emailVerified) {
+    return <VerifyEmailScreen />;
   }
 
   // Ação: Iniciar Nova Degustação com Grão pré-selecionado

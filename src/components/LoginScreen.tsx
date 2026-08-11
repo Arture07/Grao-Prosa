@@ -83,13 +83,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }
             <input
               type="email"
               disabled={isLoading}
-              placeholder="seu.email@exemplo.com"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
                 if (errorMessage) setErrorMessage(null);
               }}
-              className="w-full bg-transparent border-b border-[#1A1A1A]/25 focus:border-[#7B1E27] px-1 py-2 text-sm text-[#1A1A1A] focus:outline-none transition-colors rounded-none placeholder:text-[#1A1A1A]/35 disabled:opacity-50"
+              className="w-full bg-transparent border-b border-[#1A1A1A]/25 focus:border-[#7B1E27] px-1 py-2 text-sm text-[#1A1A1A] focus:outline-none transition-colors rounded-none disabled:opacity-50"
             />
           </div>
 
@@ -102,13 +101,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onNavigateToRegister }
             <input
               type="password"
               disabled={isLoading}
-              placeholder="••••••••"
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
                 if (errorMessage) setErrorMessage(null);
               }}
-              className="w-full bg-transparent border-b border-[#1A1A1A]/25 focus:border-[#7B1E27] px-1 py-2 text-sm text-[#1A1A1A] focus:outline-none transition-colors rounded-none placeholder:text-[#1A1A1A]/35 disabled:opacity-50"
+              className="w-full bg-transparent border-b border-[#1A1A1A]/25 focus:border-[#7B1E27] px-1 py-2 text-sm text-[#1A1A1A] focus:outline-none transition-colors rounded-none disabled:opacity-50"
             />
           </div>
 
