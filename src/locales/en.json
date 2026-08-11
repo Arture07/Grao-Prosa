@@ -1,0 +1,345 @@
+{
+  "header": {
+    "tagline": "Specialty Coffee & Sensory Journal",
+    "pantry": "01. My Pantry",
+    "tasting": "02. New Tasting",
+    "journal": "03. Sensory Journal",
+    "timer": "04. Timer & Ratio",
+    "radar": "05. GPS Radar",
+    "newGrain": "New Coffee",
+    "installApp": "Install App",
+    "addToHomeScreen": "Add to Home Screen",
+    "install": "Install",
+    "myAccount": "My Account",
+    "accountOptions": "Account Options",
+    "logout": "Log Out",
+    "pwaBannerTitle": "Install Grão & Prosa on Home Screen",
+    "pwaBannerSub": "Access your coffee sensory journal in 1 click and offline mode.",
+    "closeWarning": "Close notice"
+  },
+  "profile": {
+    "title": "User Profile",
+    "connectedAs": "Connected as:",
+    "deleteAccount": "Delete my account permanently",
+    "language": "Language"
+  },
+  "pantry": {
+    "title": "01. My Pantry",
+    "subtitle": "Local Inventory Management",
+    "addGrain": "Add Coffee",
+    "registeredGrains": "Registered Coffees",
+    "totalStock": "Total in Stock",
+    "criticalStock": "Critical Stock (≤50g)",
+    "criticalPackageSingular": "bag low on coffee",
+    "criticalPackagePlural": "bags low on coffee",
+    "searchPlaceholder": "Search coffee by name, roaster or origin...",
+    "emptySearchTitle": "No coffee found in search",
+    "emptySearchDesc": "Try using other search terms.",
+    "emptyPantryTitle": "Your coffee pantry is empty",
+    "emptyPantryDesc": "Register your coffee batches to track remaining amount in grams and log brews in your journal.",
+    "registerFirstBatch": "Register First Batch",
+    "origin": "Origin",
+    "roast": "Roast",
+    "viewJournal": "View Journal",
+    "ratingSingular": "rating",
+    "ratingPlural": "ratings",
+    "noRating": "N/A",
+    "remainingAmount": "Remaining Amount:",
+    "lowStockWarning": "(Low!)",
+    "rateCoffee": "Rate this Coffee",
+    "editGrain": "Edit Coffee",
+    "deleteGrain": "Delete Coffee",
+    "deleteModalTitle": "Delete Coffee from Stock?",
+    "deleteModalMessage": "Are you sure you want to delete this coffee? All tasting logs associated with it will also be removed from the journal.",
+    "errorDelete": "Error deleting coffee from pantry. Please try again."
+  },
+  "forms": {
+    "titleAdd": "Add to Pantry",
+    "titleEdit": "Edit Coffee",
+    "subtitle": "Enter the coffee batch details for your stock.",
+    "sectionHeader": "Coffee Pantry",
+    "coffeeName": "Farm / Coffee Name *",
+    "coffeeNamePlaceholder": "E.g. Catuaí Amarelo - Sítio da Serra",
+    "roaster": "Roaster / Brand",
+    "roasterPlaceholder": "E.g. Coffee Lab / Um Coffee Co.",
+    "origin": "Origin / Region",
+    "originPlaceholder": "E.g. Mantiqueira de Minas - MG",
+    "roastLevel": "Roast Level",
+    "quantityGrams": "Quantity (Grams) *",
+    "quantityDefault": "Default: 250g",
+    "cancel": "Cancel",
+    "saveGrain": "SAVE COFFEE",
+    "updateGrain": "UPDATE COFFEE",
+    "saving": "SAVING...",
+    "errNameRequired": "Please provide the farm or coffee name.",
+    "errQuantityInvalid": "Please provide a valid quantity in grams (e.g., 250).",
+    "errFirebaseSave": "Error connecting to cloud database. Please try again."
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "loading": "Loading...",
+    "close": "Close"
+  },
+  "journal": {
+    "title": "03. Sensory Journal",
+    "subtitle": "Your evaluations and tasting notes",
+    "registerTasting": "Log Tasting",
+    "searchPlaceholder": "Search journal...",
+    "method": "Method:",
+    "rating": "Rating:",
+    "emptyState": "No tastings found."
+  },
+  "tastingForm": {
+    "title": "New Tasting",
+    "selectGrain": "Select Coffee",
+    "extractionMethod": "Brewing Method (E.g. V60, Espresso)",
+    "rating": "Rating (0 to 5)",
+    "sensoryNotesPlaceholder": "Evaluation and sensory notes...",
+    "cancel": "Cancel",
+    "saveTasting": "Save Tasting"
+  },
+  "radar": {
+    "tagline": "05. GPS Radar",
+    "title": "Coffee Shop Radar",
+    "subtitle": "Find specialty coffee near you",
+    "mapView": "Map",
+    "listView": "List",
+    "focusWork": "Focus / Work",
+    "freeWifi": "Free Wi-Fi",
+    "powerOutlets": "Power Outlets",
+    "allRatings": "All ratings",
+    "locationsFound": "locations found",
+    "gpsPermissionRequired": "GPS Permission Required",
+    "searchingNearby": "Searching nearby coffee shops...",
+    "enableLocation": "Enable Location",
+    "mapTip": "Tip: Click a marker to open details and route on your GPS.",
+    "legendYou": "You",
+    "legendCoffeeGroup": "Coffee Group",
+    "legendSpecialtyCoffee": "Specialty Coffee",
+    "legendWifiOutlets": "Wi-Fi / Power Outlets"
+  },
+  "tools": {
+    "title": "04. Timer & Brew Ratio",
+    "subtitle": "Pouring guides, phases, and barista calculator",
+    "proportionLabel": "RATIO:",
+    "extractionTime": "Brewing Time",
+    "start": "Start",
+    "pause": "Pause",
+    "reset": "Reset",
+    "recipes": "Recipes",
+    "ratioCalculator": "Ratio Calculator",
+    "powderAmount": "Coffee Amount (g)",
+    "ratio": "Ratio (1:X)",
+    "waterMl": "Water (ml)",
+    "yieldMl": "Yield (ml)",
+    "recipeList": "Recipes",
+    "stagesTitle": "Brewing Steps (5 Phases)",
+    "stageNumber": "Step {{current}} of {{total}}",
+    "pourUntil": "Pour until:",
+    "targetWater": "Target Water",
+    "soundVibrationOn": "Sound & Haptics ON",
+    "soundVibrationOff": "Sound & Haptics OFF",
+    "estimatedTotalTime": "Est. Total Time:",
+    "step": "Step",
+    "of": "of",
+    "accumulated": "accumulated",
+    "registerExtractionInJournal": "Log this extraction in journal",
+    "calculatedTotalWater": "Calculated total water:",
+    "doseWaterRatio": "Dose: {{dose}}g coffee • Water: {{water}}ml",
+    "ratioLabel": "Ratio:",
+    "goldenRatio": "Golden Coffee Ratio",
+    "ratioSubtitle": "Fine tuning between coffee grounds (g) and water volume (ml).",
+    "modeCoffeeToWater": "Mode: Coffee → Water",
+    "modeWaterToCoffee": "Mode: Water → Coffee",
+    "selectRecommendedRatio": "Select Recommended Ratio (Ratio 1:X)",
+    "recipeResult": "Recipe Result",
+    "ofCoffeeFor": "of coffee for",
+    "ofWater": "of water",
+    "calculatedRatioSummary": "Calculated ratio: 1:{{ratio}} • Estimated yield: ~{{yieldMl}}ml in cup.",
+    "applyToTimer": "Apply to Timer",
+    "baristaTipTitle": "Barista Tip:",
+    "baristaTipBody": "Lower ratios (1:12 - 1:14) result in drinks with heavier body and pronounced caramel sweetness. Higher ratios (1:16 - 1:18) favor delicate, malic acidity and floral notes.",
+    "presets": {
+      "concentrated": { "style": "Concentrated", "desc": "Dense and bold flavor" },
+      "fullBodied": { "style": "Full-Bodied", "desc": "French Press or Moka" },
+      "golden": { "style": "Golden Ratio", "desc": "Classic V60 & Aeropress standard" },
+      "smoothFloral": { "style": "Smooth & Floral", "desc": "Highlights acidity and aroma in pour-over" },
+      "delicate": { "style": "Delicate", "desc": "Light-bodied infusions" }
+    }
+  },
+  "recipes": {
+    "v60-46": {
+      "name": "V60 — 4:6 Method (Tetsu Kasuya)",
+      "description": "World Brewers Cup champion method. Splits 40% of water for acidity/sweetness and 60% for body.",
+      "steps": {
+        "e1": {
+          "name": "Bloom (Pre-infusão)",
+          "instruction": "Pour 60ml of water in circular motions to release CO2 gases (degassing)."
+        },
+        "e2": {
+          "name": "Pour 1 (Sweetness & Acidity)",
+          "instruction": "Pour until reaching 120ml total. Firm pour in the center."
+        },
+        "e3": {
+          "name": "Pour 2 (Body)",
+          "instruction": "Pour until 180ml total. Maintain a steady flow."
+        },
+        "e4": {
+          "name": "Pour 3 (Balance)",
+          "instruction": "Pour until 240ml total."
+        },
+        "e5": {
+          "name": "Final Pour & Drawdown",
+          "instruction": "Pour until 300ml final. Wait for the water to drain completely through the filter."
+        }
+      }
+    },
+    "aeropress-invertido": {
+      "name": "Aeropress — Standard Inverted Method",
+      "description": "Rapid immersion extraction followed by manual pressure filtering.",
+      "steps": {
+        "a1": {
+          "name": "Fast Bloom",
+          "instruction": "Pour 60ml of boiling water (92°C) and stir gently with the paddle for 10 seconds."
+        },
+        "a2": {
+          "name": "Full Fill",
+          "instruction": "Pour the remaining water up to 224ml. Attach the filter cap with rinsed paper filter without pressing."
+        },
+        "a3": {
+          "name": "Press Plunger",
+          "instruction": "Flip the Aeropress onto the cup and press the plunger gently for 30s until you hear a hiss of air."
+        }
+      }
+    },
+    "prensa-francesa": {
+      "name": "French Press — Hoffmann Method",
+      "description": "Clean and full-bodied method without sediment bitterness, popularized by James Hoffmann.",
+      "steps": {
+        "p1": {
+          "name": "Total Direct Infusion",
+          "instruction": "Pour all 320ml of boiling water quickly ensuring all grounds are wet. Wait 4 minutes."
+        },
+        "p2": {
+          "name": "Break Crust & Stir",
+          "instruction": "Stir the top crust gently with a spoon so grounds sink to the bottom."
+        },
+        "p3": {
+          "name": "Final Decanting",
+          "instruction": "Wait for oils and particles to settle. Place plunger on top without pressing down."
+        }
+      }
+    },
+    "chemex-suave": {
+      "name": "Chemex — Elegant Glass Filter",
+      "description": "Clean extraction with thicker paper filter, highlighting floral and fruity notes.",
+      "steps": {
+        "c1": {
+          "name": "Extended Bloom",
+          "instruction": "Pour 75ml of water and wait for the coffee bed to expand."
+        },
+        "c2": {
+          "name": "Main Pour 1",
+          "instruction": "Pour slowly in a circular motion until reaching 200ml total."
+        },
+        "c3": {
+          "name": "Main Pour 2 & Drawdown",
+          "instruction": "Complete up to 400ml water. Allow liquid to drain by gravity."
+        }
+      }
+    }
+  },
+  "descriptors": {
+    "Frutado": "Fruity",
+    "Achocolatado": "Chocolaty",
+    "Cítrico": "Citrus",
+    "Floral": "Floral",
+    "Caramelo": "Caramel",
+    "Nozes / Castanhas": "Nuts / Chestnuts",
+    "Especiarias": "Spices",
+    "Mel": "Honey",
+    "Vinado / Fermentado": "Winey / Fermented",
+    "Amêndoa": "Almond",
+    "Cacau Amargo": "Bitter Cocoa",
+    "Rapadura": "Unrefined Sugar",
+    "Baunilha": "Vanilla",
+    "Frutas Vermelhas": "Red Berries",
+    "Frutas Amarelas": "Yellow Fruits",
+    "Herbal / Chá": "Herbal / Tea",
+    "Nobre": "Noble",
+    "Caramelizado": "Caramelized",
+    "Castanhas": "Nuts",
+    "frutado": "Fruity",
+    "achocolatado": "Chocolaty",
+    "cítrico": "Citrus",
+    "floral": "Floral",
+    "caramelo": "Caramel",
+    "nozes / castanhas": "Nuts / Chestnuts",
+    "especiarias": "Spices",
+    "mel": "Honey",
+    "vinado / fermentado": "Winey / Fermented",
+    "amêndoa": "Almond",
+    "cacau amargo": "Bitter Cocoa",
+    "rapadura": "Unrefined Sugar",
+    "baunilha": "Vanilla",
+    "frutas vermelhas": "Red Berries",
+    "frutas amarelas": "Yellow Fruits",
+    "herbal / chá": "Herbal / Tea"
+  },
+  "tastingForm": {
+    "title": "New Tasting",
+    "subtitle": "Log extraction brewing metrics and sensory descriptors.",
+    "back": "Back",
+    "rating_1": "Poor",
+    "rating_2": "Fair",
+    "rating_3": "Good",
+    "rating_4": "Very Good",
+    "rating_5": "Memorable",
+    "selectGrain": "Select Coffee",
+    "extractionMethod": "Brewing Method (E.g. V60, Espresso)",
+    "rating": "Rating (0 to 5)",
+    "sensoryNotesPlaceholder": "Evaluation and sensory notes...",
+    "cancel": "Cancel",
+    "saveTasting": "Save Tasting",
+    "preparationMethod": "Brewing Method",
+    "preparationDate": "Brewing Date",
+    "ratingLabel": "Rating (0 to 5)",
+    "sensoryDescriptorsTitle": "4. Sensory Descriptors",
+    "recipeParamsTitle": "5. Recipe Parameters & Deduct",
+    "doseG": "Dose (g)",
+    "waterMl": "Water (ml)",
+    "extractedRatio": "Extracted Ratio",
+    "realtimeRatio": "Real-time Coffee x Water ratio",
+    "deductInventory": "Deduct Automatically from Inventory",
+    "deductDescription": "Deduct {{dose}}g from available batch quantity.",
+    "deductInventoryDesc": "Deduct {{dose}}g from available batch quantity.",
+    "infusionNotes": "Brewing Notes & Observations",
+    "allMethods": "All Methods",
+    "addNewDescriptorPlaceholder": "Add new descriptor...",
+    "addDescriptorButton": "+ Add",
+    "ratioLabel": "Ratio:"
+  },
+  "profile": {
+    "title": "User Profile",
+    "connectedAs": "Connected as:",
+    "myAccount": "My Account",
+    "language": "Language",
+    "memberSince": "Member since",
+    "logout": "Log Out",
+    "deleteAccountPermanent": "Delete my account permanently",
+    "changePassword": "Change Password",
+    "sendResetEmailPrompt": "Send reset email?",
+    "resetEmailSent": "Reset email sent!",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  },
+  "modals": {
+    "areYouSure": "Are you sure?",
+    "cannotBeUndone": "This action cannot be undone.",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "viewRoute": "Get Route",
+    "close": "Close"
+  }
+}

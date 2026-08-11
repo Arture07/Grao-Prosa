@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Coffee, PlusCircle, BookOpen, Sparkles, Timer, MapPin, LogOut, User as UserIcon, Smartphone } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Coffee, PlusCircle, BookOpen, Sparkles, Timer, MapPin, LogOut, User as UserIcon, Smartphone, Download, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import { ProfileModal } from './ProfileModal';
+import { LanguageSelector } from './LanguageSelector';
 
 interface HeaderProps {
   activeTab: 'despensa' | 'nova-degustacao' | 'diario' | 'cronometro' | 'radar';
@@ -57,12 +59,54 @@ export const Header: React.FC<HeaderProps> = ({
   setActiveTab,
   onOpenNovoGrao
 }) => {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
-  const { isInstallable, installApp } = usePWAInstall();
+  const { isInstallable, isStandalone, installApp } = usePWAInstall();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  // Exibe o banner PWA com destaque se for instalável e não tiver sido dispensado
+  const showPwaBanner = isInstallable && !isStandalone && !bannerDismissed;
 
   return (
     <header className="bg-[#F5F2ED] text-[#1A1A1A] border-b border-[#1A1A1A] pt-4 sm:pt-6 pb-2 sticky top-0 z-30 shadow-xs">
+      {/* Banner de Destaque PWA */}
+      {showPwaBanner && (
+        <div className="bg-[#5A4033] text-[#FAF7F2] px-4 py-2.5 mb-3 border-b border-[#3D2B22] shadow-sm">
+          <div className="max-w-6xl mx-auto flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
+            <div className="flex items-center gap-3">
+              <div className="p-1.5 bg-[#FAF7F2]/10 rounded-md shrink-0">
+                <Smartphone className="w-5 h-5 text-[#FAF7F2]" />
+              </div>
+              <div>
+                <p className="font-sans text-xs font-bold tracking-wide uppercase">
+                  {t('header.pwaBannerTitle')}
+                </p>
+                <p className="font-sans text-[11px] text-[#FAF7F2]/80 leading-tight hidden xs:block">
+                  {t('header.pwaBannerSub')}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 ml-auto sm:ml-0">
+              <button
+                onClick={installApp}
+                className="px-3 py-1.5 bg-[#FAF7F2] text-[#5A4033] hover:bg-[#F5F2ED] font-sans text-xs uppercase font-bold tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-xs rounded-none"
+              >
+                <Download className="w-3.5 h-3.5" />
+                {t('header.installApp')}
+              </button>
+              <button
+                onClick={() => setBannerDismissed(true)}
+                title={t('header.closeWarning')}
+                className="p-1.5 text-[#FAF7F2]/70 hover:text-[#FAF7F2] hover:bg-[#3D2B22] transition-all cursor-pointer rounded-none"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
         {/* Top Header Section */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#1A1A1A]/15 pb-4">
@@ -74,7 +118,7 @@ export const Header: React.FC<HeaderProps> = ({
                   Grão & Prosa
                 </h1>
                 <p className="font-sans text-[9px] uppercase tracking-widest text-[#5A4033] mt-1 font-semibold opacity-80">
-                  Café Especial & Diário Sensorial
+                  {t('header.tagline')}
                 </p>
               </div>
             </div>
@@ -82,27 +126,30 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Quick Action Buttons & User Profile */}
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Seletor de Idiomas no Header */}
+            <LanguageSelector variant="compact" />
+
             {isInstallable && (
               <button
                 onClick={installApp}
-                title="Adicionar na tela de início"
+                title={t('header.addToHomeScreen')}
                 className="px-2.5 py-1.5 bg-[#5A4033] hover:bg-[#3D2B22] text-[#FAF7F2] font-sans text-xs uppercase tracking-wider font-semibold transition-all flex items-center gap-1.5 cursor-pointer rounded-none shadow-xs"
               >
                 <Smartphone className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Adicionar na tela de início</span>
-                <span className="sm:hidden">Instalar</span>
+                <span className="hidden sm:inline">{t('header.addToHomeScreen')}</span>
+                <span className="sm:hidden">{t('header.install')}</span>
               </button>
             )}
 
             {user && (
               <button
                 onClick={() => setIsProfileModalOpen(true)}
-                title="Opções da Conta"
+                title={t('header.accountOptions')}
                 className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-full border bg-black/5 hover:bg-black/10 text-[#1A1A1A] border-[#1A1A1A]/10 transition-all cursor-pointer"
               >
                 <UserIcon className="w-3.5 h-3.5 text-[#7B1E27]" />
                 <span className="truncate max-w-[130px] font-medium text-[11px]">
-                  {user.displayName || user.email?.split('@')[0] || 'Minha Conta'}
+                  {user.displayName || user.email?.split('@')[0] || t('header.myAccount')}
                 </span>
               </button>
             )}
@@ -112,17 +159,17 @@ export const Header: React.FC<HeaderProps> = ({
               className="px-3 py-1.5 bg-[#1A1A1A] hover:bg-[#333] text-[#F5F2ED] font-sans text-xs uppercase tracking-widest font-medium rounded-none transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
               <PlusCircle className="w-3.5 h-3.5" />
-              <span className="hidden xs:inline">Novo Grão</span>
+              <span className="hidden xs:inline">{t('header.newGrain')}</span>
             </button>
 
             {user && (
               <button
                 onClick={logout}
-                title="Sair da Conta"
+                title={t('header.logout')}
                 className="px-2.5 py-1.5 bg-transparent hover:bg-red-50 text-[#7B1E27] font-sans text-xs uppercase tracking-wider border border-[#7B1E27]/30 hover:border-[#7B1E27] transition-all flex items-center gap-1 cursor-pointer rounded-md"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Sair</span>
+                <span className="hidden sm:inline">{t('header.logout')}</span>
               </button>
             )}
           </div>
@@ -139,7 +186,7 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             <Coffee className="w-3.5 h-3.5" />
-            01. Minha Despensa
+            {t('header.pantry')}
           </button>
 
           <button
@@ -151,7 +198,7 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             <Sparkles className="w-3.5 h-3.5 text-[#5A4033]" />
-            02. Nova Degustação
+            {t('header.tasting')}
           </button>
 
           <button
@@ -163,7 +210,7 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             <BookOpen className="w-3.5 h-3.5" />
-            03. Diário Sensorial
+            {t('header.journal')}
           </button>
 
           <button
@@ -175,7 +222,7 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             <Timer className="w-3.5 h-3.5 text-[#5A4033]" />
-            04. Cronômetro & Ratio
+            {t('header.timer')}
           </button>
 
           <button
@@ -187,7 +234,7 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
           >
             <MapPin className="w-3.5 h-3.5 text-emerald-700" />
-            05. Radar GPS
+            {t('header.radar')}
           </button>
         </nav>
 

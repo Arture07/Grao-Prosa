@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Grao, CriarDegustacaoDTO, METODOS_PREPARO, NOTAS_SENSORIAIS_SUGERIDAS } from '../types/coffee';
 import { degustacaoRepository } from '../repositories/degustacaoRepository';
 import { graoRepository } from '../repositories/graoRepository';
+import { offlineSyncRepository } from '../repositories/offlineSyncRepository';
 import { useAuth } from '../hooks/useAuth';
 import { 
   Coffee, 
@@ -36,6 +38,7 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
   onSuccess,
   onCancel
 }) => {
+  const { t } = useTranslation();
   const { uid } = useAuth();
 
   // Estado de grãos carregados do Firestore
@@ -124,7 +127,7 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
     }
   };
 
-  // Submissão do Formulário para o Firestore
+  // Submissão do Formulário para o Firestore ou Fila Offline
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -172,12 +175,20 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
         criadoEm: new Date(data).toISOString()
       };
 
-      // 1. Salva a degustação no Firestore através do repositório
-      await degustacaoRepository.salvar(dto, uid);
+      const isOfflineMode = !navigator.onLine;
 
-      // 2. Se marcado para abater do estoque, abater a dose em gramas no Firestore
-      if (abaterEstoque && doseGramas > 0 && graoSelecionado) {
-        await graoRepository.abaterEstoque(graoId, Number(doseGramas), uid);
+      if (isOfflineMode) {
+        offlineSyncRepository.addPending(dto, abaterEstoque, Number(doseGramas) || 0, graoId);
+      } else {
+        try {
+          await degustacaoRepository.salvar(dto, uid);
+          if (abaterEstoque && doseGramas > 0 && graoSelecionado) {
+            await graoRepository.abaterEstoque(graoId, Number(doseGramas), uid);
+          }
+        } catch (err) {
+          console.warn('Conexão falhou ao salvar degustação no Firestore, armazenando localmente para sincronização:', err);
+          offlineSyncRepository.addPending(dto, abaterEstoque, Number(doseGramas) || 0, graoId);
+        }
       }
 
       setSucessoMsg(true);
@@ -186,8 +197,8 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
       }, 1000);
 
     } catch (err) {
-      console.error('Erro ao salvar degustação no Firestore:', err);
-      alert('Erro ao registrar a degustação. Verifique a conexão.');
+      console.error('Erro geral ao processar degustação:', err);
+      alert('Erro ao registrar a degustação. Tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -228,15 +239,15 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
           onClick={onCancel}
           className="font-sans text-xs uppercase tracking-wider text-[#1A1A1A]/60 hover:text-[#1A1A1A] flex items-center gap-1.5 transition-colors cursor-pointer"
         >
-          <ArrowLeft className="w-4 h-4" /> Voltar
+          <ArrowLeft className="w-4 h-4" /> {t('tastingForm.back')}
         </button>
       </div>
 
       {/* Card do Formulário */}
       <div className="stamped-border bg-white/70 p-6 sm:p-8 space-y-6">
         <div>
-          <h2 className="font-serif text-3xl font-semibold text-[#1A1A1A]">02. Nova Degustação</h2>
-          <p className="font-sans text-xs text-[#1A1A1A]/60 mt-1">Registre as métricas de preparo e descritores sensoriais da extração.</p>
+          <h2 className="font-serif text-3xl font-semibold text-[#1A1A1A]">{t('tastingForm.title')}</h2>
+          <p className="font-sans text-xs text-[#1A1A1A]/60 mt-1">{t('tastingForm.subtitle')}</p>
         </div>
 
         {sucessoMsg && (
@@ -253,7 +264,7 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
           {/* 1. Seleção do Grão Real */}
           <div className="space-y-2">
             <label className="block text-xs font-bold uppercase tracking-wider text-[#1A1A1A]">
-              1. Selecionar Grão em Estoque *
+              {t('tastingForm.selectGrain')} *
             </label>
             <div className="relative">
               <select
@@ -283,7 +294,7 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="block text-xs font-bold uppercase tracking-wider text-[#1A1A1A]">
-                2. Método de Preparo *
+                {t('tastingForm.extractionMethod')} *
               </label>
               <select
                 value={metodoPreparo}
@@ -309,7 +320,7 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
 
             <div className="space-y-2">
               <label className="block text-xs font-bold uppercase tracking-wider text-[#1A1A1A]">
-                Data do Preparo
+                {t('tastingForm.preparationDate')}
               </label>
               <div className="relative">
                 <input
@@ -328,14 +339,14 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
           <div className="stamped-border bg-white/40 p-4 space-y-2.5">
             <div className="flex justify-between items-center">
               <label className="block text-xs font-bold uppercase tracking-wider text-[#1A1A1A]">
-                3. Avaliação Global (1 a 5 Estrelas) *
+                {t('tastingForm.ratingLabel')} *
               </label>
               <span className="font-serif italic text-sm text-[#5A4033] font-semibold">
-                {nota === 5 && '⭐⭐⭐⭐⭐ Memorável'}
-                {nota === 4 && '⭐⭐⭐⭐ Excelente'}
-                {nota === 3 && '⭐⭐⭐ Bom'}
-                {nota === 2 && '⭐⭐ Regular'}
-                {nota === 1 && '⭐ Fraco'}
+                {nota === 5 && `⭐⭐⭐⭐⭐ ${t('tastingForm.rating_5')}`}
+                {nota === 4 && `⭐⭐⭐⭐ ${t('tastingForm.rating_4')}`}
+                {nota === 3 && `⭐⭐⭐ ${t('tastingForm.rating_3')}`}
+                {nota === 2 && `⭐⭐ ${t('tastingForm.rating_2')}`}
+                {nota === 1 && `⭐ ${t('tastingForm.rating_1')}`}
               </span>
             </div>
 
@@ -364,7 +375,7 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
             <div className="flex justify-between items-center">
               <label className="block text-xs font-bold uppercase tracking-wider text-[#1A1A1A] flex items-center gap-1.5">
                 <Tag className="w-4 h-4 text-[#5A4033]" />
-                4. Descritores Sensoriais
+                {t('tastingForm.sensoryDescriptorsTitle')}
               </label>
               <span className="text-[10px] uppercase opacity-60">
                 {notasSensoriais.length} {notasSensoriais.length === 1 ? 'item' : 'itens'}
@@ -374,6 +385,7 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
             <div className="flex flex-wrap gap-2 p-3 stamped-border bg-white/40 min-h-[70px]">
               {NOTAS_SENSORIAIS_SUGERIDAS.map((tag) => {
                 const isSelected = notasSensoriais.includes(tag);
+                const tagTraduzida = t(`descriptors.${tag.toLowerCase()}`, tag);
                 return (
                   <button
                     type="button"
@@ -386,7 +398,7 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
                     }`}
                   >
                     {isSelected && <Check className="w-3 h-3 text-[#F5F2ED]" />}
-                    {tag}
+                    {tagTraduzida}
                   </button>
                 );
               })}
@@ -428,13 +440,13 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
           {/* 5. Parâmetros da Receita */}
           <div className="border-t border-[#1A1A1A]/10 pt-4 space-y-4">
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#1A1A1A]">
-              5. Parâmetros da Receita & Abatimento
+              {t('tastingForm.recipeParamsTitle')}
             </h4>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-xs font-medium text-[#1A1A1A]/70 flex items-center gap-1">
-                  <Scale className="w-3.5 h-3.5 text-[#5A4033]" /> Dose (g)
+                  <Scale className="w-3.5 h-3.5 text-[#5A4033]" /> {t('tastingForm.doseG')}
                 </label>
                 <input
                   type="number"
@@ -448,7 +460,7 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
 
               <div className="space-y-1">
                 <label className="text-xs font-medium text-[#1A1A1A]/70 flex items-center gap-1">
-                  <Droplet className="w-3.5 h-3.5 text-[#5A4033]" /> Água (ml)
+                  <Droplet className="w-3.5 h-3.5 text-[#5A4033]" /> {t('tastingForm.waterMl')}
                 </label>
                 <input
                   type="number"
@@ -465,14 +477,14 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
             <div className="stamped-border bg-[#F5F2ED] p-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="font-sans text-[10px] uppercase font-bold tracking-widest bg-[#1A1A1A] text-[#F5F2ED] px-2 py-0.5">
-                  Proporção Extraída
+                  {t('tastingForm.extractedRatio')}
                 </span>
                 <span className="text-xs text-[#1A1A1A]/70 hidden sm:inline">
-                  Relação Café x Água em tempo real
+                  {t('tastingForm.realtimeRatio')}
                 </span>
               </div>
               <div className="flex items-baseline gap-1.5 font-serif">
-                <span className="text-xs text-[#5A4033] font-sans uppercase tracking-wider font-semibold">Proporção:</span>
+                <span className="text-xs text-[#5A4033] font-sans uppercase tracking-wider font-semibold">{t('tools.proportionLabel')}</span>
                 <span className="font-bold text-base text-[#1A1A1A] font-mono tracking-tight bg-white px-2 py-0.5 stamped-border">
                   {ratioCalculado}
                 </span>
@@ -482,9 +494,9 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
             {/* Abater Estoque Toggle */}
             <div className="stamped-border bg-amber-50/50 p-3.5 flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold text-[#1A1A1A]">Abater Automaticamente do Estoque</p>
+                <p className="text-xs font-bold text-[#1A1A1A]">{t('tastingForm.deductInventory')}</p>
                 <p className="text-[11px] text-[#5A4033]">
-                  Descontar <strong>{doseGramas}g</strong> da quantidade disponível no lote.
+                  {t('tastingForm.deductInventoryDesc', { dose: doseGramas })}
                 </p>
               </div>
 
@@ -500,11 +512,11 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
           {/* Observações */}
           <div className="space-y-2">
             <label className="block text-xs font-bold uppercase tracking-wider text-[#1A1A1A]">
-              Notas de Infusão & Observações
+              {t('tastingForm.infusionNotes')}
             </label>
             <textarea
               rows={3}
-              placeholder="Descreva detalhes como moagem, temperatura, tempo de extração..."
+              placeholder={t('tastingForm.sensoryNotesPlaceholder')}
               value={observacoes}
               onChange={(e) => setObservacoes(e.target.value)}
               className="w-full bg-[#F5F2ED] stamped-border p-3.5 text-xs text-[#1A1A1A] focus:outline-none"
@@ -518,7 +530,7 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
               onClick={onCancel}
               className="flex-1 py-3 px-4 bg-transparent stamped-border text-[#1A1A1A] font-sans text-xs uppercase tracking-widest font-medium hover:bg-black/5 cursor-pointer"
             >
-              Cancelar
+              {t('tastingForm.cancel')}
             </button>
 
             <button
@@ -532,7 +544,7 @@ export const NovaDegustacaoForm: React.FC<NovaDegustacaoFormProps> = ({
                   Salvando degustação...
                 </>
               ) : (
-                'Salvar no Diário'
+                t('tastingForm.saveTasting')
               )}
             </button>
           </div>

@@ -1,7 +1,10 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, setLogLevel } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
+
+// Silencia avisos internos de conexão e modo offline do SDK do Firestore
+setLogLevel('error');
 
 const app = initializeApp(firebaseConfig);
 

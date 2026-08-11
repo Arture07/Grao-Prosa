@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useBrewTimer } from '../hooks/useBrewTimer';
 import { RECEITAS_PREDEFINIDAS } from '../data/presetRecipes';
 import { RatioCalculator } from './RatioCalculator';
@@ -22,6 +23,7 @@ interface BrewingTimerViewProps {
 }
 
 export const BrewingTimerView: React.FC<BrewingTimerViewProps> = ({ onRegistrarDegustacao }) => {
+  const { t } = useTranslation();
   const [mostrarCalculadora, setMostrarCalculadora] = useState<boolean>(false);
 
   // Hook Customizado Engine do Cronômetro
@@ -39,10 +41,10 @@ export const BrewingTimerView: React.FC<BrewingTimerViewProps> = ({ onRegistrarD
       <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-[#1A1A1A]/10 pb-4 gap-2">
         <div>
           <h2 className="font-serif text-3xl font-semibold tracking-tight text-[#1A1A1A]">
-            04. Cronômetro de Extração & Proporção
+            {t('tools.title')}
           </h2>
           <p className="font-sans text-[10px] uppercase tracking-[0.2em] opacity-60 mt-0.5">
-            Guias de Vertido, Fases e Calculadora Barista
+            {t('tools.subtitle')}
           </p>
         </div>
 
@@ -52,7 +54,7 @@ export const BrewingTimerView: React.FC<BrewingTimerViewProps> = ({ onRegistrarD
             className="stamped-border bg-white/80 hover:bg-white text-[#1A1A1A] px-4 py-2 font-sans text-xs uppercase tracking-wider font-semibold flex items-center gap-2 transition-all cursor-pointer"
           >
             <Sliders className="w-3.5 h-3.5 text-[#5A4033]" />
-            {mostrarCalculadora ? 'Ocultar Calculadora' : 'Calculadora Ratio'}
+            {mostrarCalculadora ? t('common.close') : t('tools.ratioCalculator')}
           </button>
         </div>
       </div>
@@ -69,7 +71,7 @@ export const BrewingTimerView: React.FC<BrewingTimerViewProps> = ({ onRegistrarD
         <div className="space-y-4 lg:col-span-1">
           <div className="stamped-border bg-white/70 p-5 space-y-4">
             <h3 className="font-serif text-xl font-semibold text-[#1A1A1A] border-b border-[#1A1A1A]/10 pb-2">
-              Selecione o Método
+              {t('tools.recipes')}
             </h3>
 
             <div className="space-y-2">
@@ -86,13 +88,13 @@ export const BrewingTimerView: React.FC<BrewingTimerViewProps> = ({ onRegistrarD
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-serif font-bold text-sm">{r.nome}</span>
+                      <span className="font-serif font-bold text-sm">{t(r.nome)}</span>
                       <span className={`font-mono text-[10px] px-2 py-0.5 ${isSelected ? 'bg-[#F5F2ED] text-[#1A1A1A]' : 'bg-[#1A1A1A]/10 text-[#1A1A1A]'}`}>
                         {r.metodo}
                       </span>
                     </div>
                     <p className={`font-sans text-[11px] mt-1 line-clamp-2 ${isSelected ? 'text-[#F5F2ED]/80' : 'text-[#1A1A1A]/70'}`}>
-                      {r.descricao}
+                      {t(r.descricao)}
                     </p>
                   </button>
                 );
@@ -103,7 +105,7 @@ export const BrewingTimerView: React.FC<BrewingTimerViewProps> = ({ onRegistrarD
             <div className="pt-3 border-t border-[#1A1A1A]/10 space-y-2">
               <div className="flex items-center justify-between">
                 <label className="font-sans text-xs font-bold uppercase tracking-wider text-[#1A1A1A] flex items-center gap-1.5">
-                  <Scale className="w-4 h-4 text-[#5A4033]" /> Dose de Pó (g)
+                  <Scale className="w-4 h-4 text-[#5A4033]" /> {t('tools.powderAmount')}
                 </label>
                 <span className="font-serif font-bold text-base text-[#1A1A1A]">
                   {timer.doseCafe}g
@@ -128,7 +130,7 @@ export const BrewingTimerView: React.FC<BrewingTimerViewProps> = ({ onRegistrarD
               </div>
 
               <div className="flex items-center justify-between text-[11px] font-sans text-[#1A1A1A]/60 pt-1">
-                <span>Água total calculada:</span>
+                <span>{t('tools.calculatedTotalWater')}</span>
                 <strong className="font-serif font-bold text-sm text-[#1A1A1A]">{timer.volumeTotalAguaMl} ml</strong>
               </div>
             </div>
@@ -158,17 +160,17 @@ export const BrewingTimerView: React.FC<BrewingTimerViewProps> = ({ onRegistrarD
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-[#F5F2ED]/10 pb-4">
               <div>
                 <span className="font-sans text-[10px] uppercase tracking-widest text-amber-300 font-bold block">
-                  {timer.receita.metodo} • {timer.receita.nome}
+                  {timer.receita.metodo} • {t(timer.receita.nome)}
                 </span>
                 <span className="font-sans text-xs text-[#F5F2ED]/70">
-                  Dose: {timer.doseCafe}g pó • Água: {timer.volumeTotalAguaMl}ml
+                  {t('tools.doseWaterRatio', { dose: timer.doseCafe, water: timer.volumeTotalAguaMl })}
                 </span>
               </div>
 
               {/* Indicadores de Feedback */}
               <div className="flex items-center gap-2 font-sans text-[10px] uppercase tracking-wider text-[#F5F2ED]/60 bg-white/5 border border-[#F5F2ED]/10 px-2.5 py-1">
                 <span className="flex items-center gap-1 text-emerald-400">
-                  <Volume2 className="w-3 h-3" /> Som & Vibração ON
+                  <Volume2 className="w-3 h-3" /> {t('tools.soundVibrationOn')}
                 </span>
               </div>
             </div>
@@ -179,7 +181,7 @@ export const BrewingTimerView: React.FC<BrewingTimerViewProps> = ({ onRegistrarD
                 {timer.tempoDecorridoFormatado}
               </div>
               <div className="font-sans text-xs text-[#F5F2ED]/60 uppercase tracking-widest">
-                Tempo Total Est.: {timer.tempoTotalFormatado}
+                {t('tools.estimatedTotalTime')} {timer.tempoTotalFormatado}
               </div>
             </div>
 
@@ -187,7 +189,7 @@ export const BrewingTimerView: React.FC<BrewingTimerViewProps> = ({ onRegistrarD
             <div className="stamped-border bg-[#F5F2ED]/10 p-5 space-y-3 relative">
               <div className="flex items-center justify-between">
                 <span className="font-sans text-[10px] uppercase tracking-widest text-amber-300 font-bold">
-                  Etapa {timer.etapaAtualIndex + 1} de {timer.etapasEscaladas.length}: {timer.etapaAtual?.nome}
+                  {t('tools.step')} {timer.etapaAtualIndex + 1} {t('tools.of')} {timer.etapasEscaladas.length}: {t(timer.etapaAtual?.nome || '')}
                 </span>
                 <span className="font-serif text-sm font-bold text-amber-300">
                   {timer.etapaAtual?.duracaoSegundos}s
@@ -198,13 +200,13 @@ export const BrewingTimerView: React.FC<BrewingTimerViewProps> = ({ onRegistrarD
               <div className="flex items-baseline gap-2">
                 <Droplet className="w-5 h-5 text-amber-300 shrink-0" />
                 <span className="font-serif text-2xl font-bold text-[#F5F2ED]">
-                  Despejar até: <strong className="text-amber-300">{timer.volumeAtualAlvoMl} ml</strong>
+                  {t('tools.pourUntil')} <strong className="text-amber-300">{timer.volumeAtualAlvoMl} ml</strong>
                 </span>
               </div>
 
-              {/* Instrução em Português */}
+              {/* Instrução */}
               <p className="font-sans text-xs text-[#F5F2ED]/90 leading-relaxed italic">
-                "{timer.etapaAtual?.instrucao}"
+                "{t(timer.etapaAtual?.instrucao || '')}"
               </p>
 
               {/* Progresso Específico da Fase Actual */}
@@ -236,7 +238,7 @@ export const BrewingTimerView: React.FC<BrewingTimerViewProps> = ({ onRegistrarD
                   onClick={timer.pause}
                   className="px-8 py-3.5 bg-amber-400 hover:bg-amber-300 text-[#1A1A1A] font-sans text-xs uppercase tracking-widest font-bold flex items-center gap-2 transition-all cursor-pointer shadow-md"
                 >
-                  <Pause className="w-5 h-5 fill-current" /> Pausar
+                  <Pause className="w-5 h-5 fill-current" /> {t('tools.pause')}
                 </button>
               ) : (
                 <button
@@ -244,7 +246,7 @@ export const BrewingTimerView: React.FC<BrewingTimerViewProps> = ({ onRegistrarD
                   className="px-8 py-3.5 bg-[#F5F2ED] hover:bg-white text-[#1A1A1A] font-sans text-xs uppercase tracking-widest font-bold flex items-center gap-2 transition-all cursor-pointer shadow-md"
                 >
                   <Play className="w-5 h-5 fill-current" />
-                  {timer.status === 'paused' ? 'Continuar' : timer.status === 'completed' ? 'Reiniciar' : 'Iniciar Extração'}
+                  {timer.status === 'paused' ? 'Continuar' : timer.status === 'completed' ? 'Reiniciar' : t('tools.start')}
                 </button>
               )}
 
@@ -278,7 +280,7 @@ export const BrewingTimerView: React.FC<BrewingTimerViewProps> = ({ onRegistrarD
                   })}
                   className="bg-amber-400/90 hover:bg-amber-300 text-[#1A1A1A] px-4 py-2.5 font-sans text-xs uppercase tracking-widest font-bold transition-all flex items-center gap-2 cursor-pointer"
                 >
-                  <BookOpen className="w-4 h-4" /> Registrar esta Extração no Diário
+                  <BookOpen className="w-4 h-4" /> {t('tools.registerExtractionInJournal')}
                 </button>
               </div>
             )}
@@ -287,7 +289,7 @@ export const BrewingTimerView: React.FC<BrewingTimerViewProps> = ({ onRegistrarD
           {/* LISTA COMPLETA DAS ETAPAS DA RECEITA */}
           <div className="stamped-border bg-white/70 p-6 space-y-4">
             <h3 className="font-serif text-xl font-semibold text-[#1A1A1A] border-b border-[#1A1A1A]/10 pb-2 flex items-center justify-between">
-              <span>Etapas do Preparo ({timer.etapasEscaladas.length} Fases)</span>
+              <span>{t('tools.stagesTitle')}</span>
               <span className="font-sans text-xs font-normal opacity-60">
                 Total: {timer.tempoTotalFormatado}
               </span>
@@ -322,17 +324,17 @@ export const BrewingTimerView: React.FC<BrewingTimerViewProps> = ({ onRegistrarD
                     <div className="flex-1 space-y-0.5">
                       <div className="flex items-center justify-between">
                         <span className="font-serif font-bold text-sm">
-                          {etapa.nome}
+                          {t(etapa.nome)}
                         </span>
                         <div className="flex items-center gap-2 font-sans text-xs">
                           <span className={isCurrent ? 'text-amber-300 font-bold' : 'font-semibold'}>
-                            {etapa.volumeAguaAlvoMl} ml acumulados
+                            {etapa.volumeAguaAlvoMl} ml {t('tools.accumulated')}
                           </span>
                           <span className="opacity-60">• {etapa.duracaoSegundos}s</span>
                         </div>
                       </div>
                       <p className={`font-sans text-xs ${isCurrent ? 'text-[#F5F2ED]/90' : 'text-[#1A1A1A]/70'}`}>
-                        {etapa.instrucao}
+                        {t(etapa.instrucao)}
                       </p>
                     </div>
                   </div>

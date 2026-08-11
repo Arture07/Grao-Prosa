@@ -1,0 +1,345 @@
+{
+  "header": {
+    "tagline": "Café Especial & Diário Sensorial",
+    "pantry": "01. Minha Despensa",
+    "tasting": "02. Nova Degustação",
+    "journal": "03. Diário Sensorial",
+    "timer": "04. Cronômetro & Ratio",
+    "radar": "05. Radar GPS",
+    "newGrain": "Novo Grão",
+    "installApp": "Instalar App",
+    "addToHomeScreen": "Adicionar na tela de início",
+    "install": "Instalar",
+    "myAccount": "Minha Conta",
+    "accountOptions": "Opções da Conta",
+    "logout": "Sair",
+    "pwaBannerTitle": "Instalar Grão & Prosa na Tela de Início",
+    "pwaBannerSub": "Acesse seu diário sensorial de café com 1 clique e modo offline.",
+    "closeWarning": "Fechar aviso"
+  },
+  "profile": {
+    "title": "Perfil do Usuário",
+    "connectedAs": "Conectado como:",
+    "deleteAccount": "Excluir minha conta permanentemente",
+    "language": "Idioma"
+  },
+  "pantry": {
+    "title": "01. Minha Despensa",
+    "subtitle": "Gerenciamento de Estoque Local",
+    "addGrain": "Adicionar Grão",
+    "registeredGrains": "Grãos Cadastrados",
+    "totalStock": "Total em Estoque",
+    "criticalStock": "Estoque Crítico (≤50g)",
+    "criticalPackageSingular": "pacote com pouco café",
+    "criticalPackagePlural": "pacotes com pouco café",
+    "searchPlaceholder": "Buscar grão por nome, torrefação ou origem...",
+    "emptySearchTitle": "Nenhum grão encontrado na busca",
+    "emptySearchDesc": "Tente utilizar outros termos de busca.",
+    "emptyPantryTitle": "Sua despensa de café está vazia",
+    "emptyPantryDesc": "Cadastre seus lotes de café para controlar a quantidade restante em gramas e registrar preparos no diário.",
+    "registerFirstBatch": "Cadastrar Primeiro Lote",
+    "origin": "Origem",
+    "roast": "Torra",
+    "viewJournal": "Ver Diário",
+    "ratingSingular": "avaliação",
+    "ratingPlural": "avaliações",
+    "noRating": "S/N",
+    "remainingAmount": "Quantidade Restante:",
+    "lowStockWarning": "(Baixo!)",
+    "rateCoffee": "Avaliar este Café",
+    "editGrain": "Editar Grão",
+    "deleteGrain": "Excluir Grão",
+    "deleteModalTitle": "Excluir Grão do Estoque?",
+    "deleteModalMessage": "Tem certeza que deseja excluir este grão? Todas as degustações associadas a ele também serão removidas do diário.",
+    "errorDelete": "Erro ao excluir o grão da despensa. Tente novamente."
+  },
+  "forms": {
+    "titleAdd": "Adicionar à Despensa",
+    "titleEdit": "Editar Grão",
+    "subtitle": "Informe os dados do lote de café para o seu estoque.",
+    "sectionHeader": "Despensa de Cafés",
+    "coffeeName": "Fazenda / Nome do Café *",
+    "coffeeNamePlaceholder": "Ex: Catuaí Amarelo - Sítio da Serra",
+    "roaster": "Torrefação / Marca",
+    "roasterPlaceholder": "Ex: Coffee Lab / Um Coffee Co.",
+    "origin": "Origem / Região",
+    "originPlaceholder": "Ex: Mantiqueira de Minas - MG",
+    "roastLevel": "Nível de Torra",
+    "quantityGrams": "Quantidade (Gramas) *",
+    "quantityDefault": "Padrão: 250g",
+    "cancel": "Cancelar",
+    "saveGrain": "SALVAR GRÃO",
+    "updateGrain": "ATUALIZAR GRÃO",
+    "saving": "SALVANDO...",
+    "errNameRequired": "Por favor, informe a fazenda ou nome do café.",
+    "errQuantityInvalid": "Por favor, informe uma quantidade válida em gramas (ex: 250).",
+    "errFirebaseSave": "Erro ao conectar com o banco na nuvem. Tente novamente."
+  },
+  "common": {
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "loading": "Carregando...",
+    "close": "Fechar"
+  },
+  "journal": {
+    "title": "03. Diário Sensorial",
+    "subtitle": "Suas avaliações e notas de degustação",
+    "registerTasting": "Registrar Degustação",
+    "searchPlaceholder": "Buscar no diário...",
+    "method": "Método:",
+    "rating": "Nota:",
+    "emptyState": "Nenhuma degustação encontrada."
+  },
+  "tastingForm": {
+    "title": "Nova Degustação",
+    "selectGrain": "Selecione o Grão",
+    "extractionMethod": "Método de Extração (Ex: V60, Espresso)",
+    "rating": "Nota (0 a 5)",
+    "sensoryNotesPlaceholder": "Avaliação e notas sensoriais...",
+    "cancel": "Cancelar",
+    "saveTasting": "Salvar Degustação"
+  },
+  "radar": {
+    "tagline": "05. Radar GPS",
+    "title": "Radar de Cafeterias",
+    "subtitle": "Encontre cafés especiais perto de você",
+    "mapView": "Mapa",
+    "listView": "Lista",
+    "focusWork": "Focar / Trabalhar",
+    "freeWifi": "Wi-Fi Grátis",
+    "powerOutlets": "Tomadas",
+    "allRatings": "Todas as notas",
+    "locationsFound": "locais encontrados",
+    "gpsPermissionRequired": "Permissão de GPS Necessária",
+    "searchingNearby": "Buscando cafeterias mais próximas...",
+    "enableLocation": "Ativar Localização",
+    "mapTip": "Dica: Clique em um marcador para abrir detalhes e traçar rota no seu GPS.",
+    "legendYou": "Você",
+    "legendCoffeeGroup": "Grupo de Cafés",
+    "legendSpecialtyCoffee": "Café Especial",
+    "legendWifiOutlets": "Wi-Fi / Tomadas"
+  },
+  "tools": {
+    "title": "04. Cronômetro & Proporção",
+    "subtitle": "Guias de vertido, fases e calculadora barista",
+    "proportionLabel": "PROPORÇÃO:",
+    "extractionTime": "Tempo de Extração",
+    "start": "Iniciar",
+    "pause": "Pausar",
+    "reset": "Zerar",
+    "recipes": "Receitas",
+    "ratioCalculator": "Calculadora de Proporção",
+    "powderAmount": "Quantidade de Pó (g)",
+    "ratio": "Proporção (1:X)",
+    "waterMl": "Água (ml)",
+    "yieldMl": "Rendimento (ml)",
+    "recipeList": "Receitas",
+    "stagesTitle": "Etapas do Preparo (5 Fases)",
+    "stageNumber": "Etapa {{current}} de {{total}}",
+    "pourUntil": "Despejar até:",
+    "targetWater": "Meta de Água",
+    "soundVibrationOn": "Som & Vibração ON",
+    "soundVibrationOff": "Som & Vibração OFF",
+    "estimatedTotalTime": "Tempo Total Est.:",
+    "step": "Etapa",
+    "of": "de",
+    "accumulated": "acumulados",
+    "registerExtractionInJournal": "Registrar esta extração no diário",
+    "calculatedTotalWater": "Água total calculada:",
+    "doseWaterRatio": "Dose: {{dose}}g pó • Água: {{water}}ml",
+    "ratioLabel": "Proporção:",
+    "goldenRatio": "Proporção Áurea do Café",
+    "ratioSubtitle": "Ajuste fino da relação entre pó de café (g) e volume de água (ml).",
+    "modeCoffeeToWater": "Modo: Café → Água",
+    "modeWaterToCoffee": "Modo: Água → Café",
+    "selectRecommendedRatio": "Selecione a Proporção Recomendada (Ratio 1:X)",
+    "recipeResult": "Resultado da Receita",
+    "ofCoffeeFor": "de café para",
+    "ofWater": "de água",
+    "calculatedRatioSummary": "Proporção calculada: 1:{{ratio}} • Rendimento estimado: ~{{yieldMl}}ml na xícara.",
+    "applyToTimer": "Aplicar no Cronômetro",
+    "baristaTipTitle": "Dica do Barista:",
+    "baristaTipBody": "Proporções menores (1:12 - 1:14) resultam em bebidas com corpo mais pesado e acentuada doçura de caramelo. Proporções maiores (1:16 - 1:18) favorecem notas delicadas, acidez málica e florais.",
+    "presets": {
+      "concentrated": { "style": "Concentrado", "desc": "Sabor denso e marcante" },
+      "fullBodied": { "style": "Encorpado", "desc": "Prensa Francesa ou Moka" },
+      "golden": { "style": "Proporção Áurea", "desc": "Padrão clássico V60 & Aeropress" },
+      "smoothFloral": { "style": "Suave & Floral", "desc": "Destaca acidez e aroma em coados" },
+      "delicate": { "style": "Delicado", "desc": "Infusões de corpo leve" }
+    }
+  },
+  "recipes": {
+    "v60-46": {
+      "name": "V60 — Método 4:6 (Tetsu Kasuya)",
+      "description": "Método campeão mundial do World Brewers Cup. Divide 40% da água para acidez/doçura e 60% para o corpo.",
+      "steps": {
+        "e1": {
+          "name": "Bloom (Pré-infusão)",
+          "instruction": "Despeje 60ml de água em movimentos circulares para liberar os gases de CO2 (desgasificação)."
+        },
+        "e2": {
+          "name": "Ataque 1 (Doçura & Acidez)",
+          "instruction": "Despeje até atingir 120ml acumulados. Vertido firme no centro."
+        },
+        "e3": {
+          "name": "Ataque 2 (Corpo)",
+          "instruction": "Despeje até 180ml acumulados. Mantenha o fluxo constante."
+        },
+        "e4": {
+          "name": "Ataque 3 (Equilíbrio)",
+          "instruction": "Despeje até 240ml acumulados."
+        },
+        "e5": {
+          "name": "Ataque Final & Drenagem",
+          "instruction": "Despeje até 300ml finais. Aguarde a água baixar completamente no filtro."
+        }
+      }
+    },
+    "aeropress-invertido": {
+      "name": "Aeropress — Método Invertido Usual",
+      "description": "Extração por imersão rápida seguida de filtragem sob pressão manual.",
+      "steps": {
+        "a1": {
+          "name": "Bloom Rápido",
+          "instruction": "Despeje 60ml de água fervente (92°C) e mexa suavemente com a pá durante 10 segundos."
+        },
+        "a2": {
+          "name": "Preenchimento Total",
+          "instruction": "Despeje o restante até 224ml. Encaixe o filtro com papel escaldado sem pressionar."
+        },
+        "a3": {
+          "name": "Pressionar Êmbolo",
+          "instruction": "Vire a Aeropress na xícara e pressione o êmbolo suavemente por 30s até ouvir o chiado de ar."
+        }
+      }
+    },
+    "prensa-francesa": {
+      "name": "Prensa Francesa — Método Hoffmann",
+      "description": "Método limpo e encorpado sem amargor por sedimentos, popularizado por James Hoffmann.",
+      "steps": {
+        "p1": {
+          "name": "Infusão Direta Total",
+          "instruction": "Despeje rapidamente os 320ml de água fervente garantindo que o pó seja umedecido. Aguarde 4 minutos."
+        },
+        "p2": {
+          "name": "Quebra da Crosta & Mexer",
+          "instruction": "Com uma colher, mexa suavemente a crosta superficial para que o pó afunde no fundo."
+        },
+        "p3": {
+          "name": "Decantação Final",
+          "instruction": "Aguarde os óleos e partículas assentarem. Encaixe o embolo apenas no topo sem empurrar para baixo."
+        }
+      }
+    },
+    "chemex-suave": {
+      "name": "Chemex — Filtro de Vidro Elegante",
+      "description": "Extração limpa com filtro de papel mais espesso, ressaltando notas florais e frutadas.",
+      "steps": {
+        "c1": {
+          "name": "Bloom Extenso",
+          "instruction": "Despeje 75ml de água e aguarde a expansão do leito de café."
+        },
+        "c2": {
+          "name": "Vertido Principal 1",
+          "instruction": "Despeje de forma lenta e circular até atingir 200ml acumulados."
+        },
+        "c3": {
+          "name": "Vertido Principal 2 & Drenagem",
+          "instruction": "Complete até 400ml de água. Deixe o líquido drenar por gravidade."
+        }
+      }
+    }
+  },
+  "descriptors": {
+    "Frutado": "Frutado",
+    "Achocolatado": "Achocolatado",
+    "Cítrico": "Cítrico",
+    "Floral": "Floral",
+    "Caramelo": "Caramelo",
+    "Nozes / Castanhas": "Nozes / Castanhas",
+    "Especiarias": "Especiarias",
+    "Mel": "Mel",
+    "Vinado / Fermentado": "Vinado / Fermentado",
+    "Amêndoa": "Amêndoa",
+    "Cacau Amargo": "Cacau Amargo",
+    "Rapadura": "Rapadura",
+    "Baunilha": "Baunilha",
+    "Frutas Vermelhas": "Frutas Vermelhas",
+    "Frutas Amarelas": "Frutas Amarelas",
+    "Herbal / Chá": "Herbal / Chá",
+    "Nobre": "Nobre",
+    "Caramelizado": "Caramelizado",
+    "Castanhas": "Castanhas",
+    "frutado": "Frutado",
+    "achocolatado": "Achocolatado",
+    "cítrico": "Cítrico",
+    "floral": "Floral",
+    "caramelo": "Caramelo",
+    "nozes / castanhas": "Nozes / Castanhas",
+    "especiarias": "Especiarias",
+    "mel": "Mel",
+    "vinado / fermentado": "Vinado / Fermentado",
+    "amêndoa": "Amêndoa",
+    "cacau amargo": "Cacau Amargo",
+    "rapadura": "Rapadura",
+    "baunilha": "Baunilha",
+    "frutas vermelhas": "Frutas Vermelhas",
+    "frutas amarelas": "Frutas Amarelas",
+    "herbal / chá": "Herbal / Chá"
+  },
+  "tastingForm": {
+    "title": "Nova Degustação",
+    "subtitle": "Registre as métricas de preparo e descritores sensoriais da extração.",
+    "back": "Voltar",
+    "rating_1": "Ruim",
+    "rating_2": "Razoável",
+    "rating_3": "Bom",
+    "rating_4": "Muito Bom",
+    "rating_5": "Memorável",
+    "selectGrain": "Selecione o Grão",
+    "extractionMethod": "Método de Extração (Ex: V60, Espresso)",
+    "rating": "Nota (0 a 5)",
+    "sensoryNotesPlaceholder": "Avaliação e notas sensoriais...",
+    "cancel": "Cancelar",
+    "saveTasting": "Salvar Degustação",
+    "preparationMethod": "Método de Preparo",
+    "preparationDate": "Data do Preparo",
+    "ratingLabel": "Avaliação (0 a 5)",
+    "sensoryDescriptorsTitle": "4. Descritores Sensoriais",
+    "recipeParamsTitle": "5. Parâmetros da Receita & Abatimento",
+    "doseG": "Dose (g)",
+    "waterMl": "Água (ml)",
+    "extractedRatio": "Proporção Extraída",
+    "realtimeRatio": "Relação Café x Água em tempo real",
+    "deductInventory": "Abater Automaticamente do Estoque",
+    "deductDescription": "Descontar {{dose}}g da quantidade disponível no lote.",
+    "deductInventoryDesc": "Descontar {{dose}}g da quantidade disponível no lote.",
+    "infusionNotes": "Notas de Infusão & Observações",
+    "allMethods": "Todos os Métodos",
+    "addNewDescriptorPlaceholder": "Adicionar novo descritor...",
+    "addDescriptorButton": "+ Adicionar",
+    "ratioLabel": "Proporção:"
+  },
+  "profile": {
+    "title": "Perfil do Usuário",
+    "connectedAs": "Conectado como:",
+    "myAccount": "Minha Conta",
+    "language": "Idioma",
+    "memberSince": "Membro desde",
+    "logout": "Sair da Conta",
+    "deleteAccountPermanent": "Excluir minha conta permanentemente",
+    "changePassword": "Mudar Senha",
+    "sendResetEmailPrompt": "Enviar e-mail de redefinição?",
+    "resetEmailSent": "E-mail de redefinição enviado!",
+    "confirm": "Confirmar",
+    "cancel": "Cancelar"
+  },
+  "modals": {
+    "areYouSure": "Tem certeza?",
+    "cannotBeUndone": "Esta ação não pode ser desfeita.",
+    "delete": "Excluir",
+    "cancel": "Cancelar",
+    "viewRoute": "Ver Rota",
+    "close": "Fechar"
+  }
+}

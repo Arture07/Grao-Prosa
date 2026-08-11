@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Wifi, 
@@ -33,6 +34,7 @@ export const CafeteriaCardModal: React.FC<CafeteriaCardModalProps> = ({
   onClose,
   onRegistrarDegustacao
 }) => {
+  const { t } = useTranslation();
   const [showSchedule, setShowSchedule] = useState(false);
 
   if (!cafeteria) return null;
@@ -158,7 +160,7 @@ export const CafeteriaCardModal: React.FC<CafeteriaCardModalProps> = ({
             <button
               onClick={onClose}
               className="p-2 text-[#1A1A1A]/40 hover:text-[#1A1A1A] hover:bg-[#1A1A1A]/5 rounded-full transition-colors cursor-pointer shrink-0"
-              title="Fechar Detalhes"
+              title={t('modals.close')}
             >
               <X className="w-5 h-5" />
             </button>
@@ -358,7 +360,7 @@ export const CafeteriaCardModal: React.FC<CafeteriaCardModalProps> = ({
               className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#3B2314] hover:bg-[#2A180C] text-white font-medium text-sm transition-colors cursor-pointer shadow-xs"
             >
               <Navigation className="w-4 h-4" />
-              Traçar Rota no GPS ({cafeteria.nome})
+              {t('modals.viewRoute')} ({cafeteria.nome})
             </button>
 
             {onRegistrarDegustacao && (

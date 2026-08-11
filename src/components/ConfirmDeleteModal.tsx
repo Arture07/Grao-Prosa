@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 
 interface ConfirmDeleteModalProps {
@@ -12,13 +13,17 @@ interface ConfirmDeleteModalProps {
 
 export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
   isOpen,
-  titulo = 'Excluir Item?',
+  titulo,
   mensagem,
   isLoading = false,
   onConfirm,
   onCancel,
 }) => {
+  const { t } = useTranslation();
+
   if (!isOpen) return null;
+
+  const displayTitle = titulo || t('modals.areYouSure');
 
   return (
     <div 
@@ -38,7 +43,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
           </div>
           <div>
             <h3 className="font-serif text-xl font-bold text-[#1A1A1A]">
-              {titulo}
+              {displayTitle}
             </h3>
             <p className="font-sans text-xs text-[#1A1A1A]/70 mt-1 leading-relaxed">
               {mensagem}
@@ -56,7 +61,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
             disabled={isLoading}
             className="px-4 py-2 font-sans text-xs font-semibold uppercase tracking-wider text-[#1A1A1A]/70 hover:bg-[#1A1A1A]/5 rounded transition-colors cursor-pointer disabled:opacity-50"
           >
-            Cancelar
+            {t('modals.cancel')}
           </button>
           <button
             type="button"
@@ -73,7 +78,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
                 <span>Excluindo...</span>
               </>
             ) : (
-              <span>Excluir</span>
+              <span>{t('modals.delete')}</span>
             )}
           </button>
         </div>

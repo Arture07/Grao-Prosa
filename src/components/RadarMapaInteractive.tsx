@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import L from 'leaflet';
 import Supercluster from 'supercluster';
 import { Navigation, Wifi, Zap, Compass, AlertCircle, RefreshCw, Layers } from 'lucide-react';
@@ -27,6 +28,7 @@ export const RadarMapaInteractive: React.FC<RadarMapaInteractiveProps> = ({
   filtroProdutividade = false,
   onToggleProdutividade
 }) => {
+  const { t } = useTranslation();
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
@@ -374,20 +376,20 @@ export const RadarMapaInteractive: React.FC<RadarMapaInteractiveProps> = ({
         <div className="pointer-events-auto bg-white/90 backdrop-blur-md px-3.5 py-2 rounded-xl shadow-md border border-[#1A1A1A]/10 text-xs flex items-center gap-4">
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-full bg-blue-600 border-2 border-white shadow-xs"></span>
-            <span className="text-[#1A1A1A]/80 font-medium">Você</span>
+            <span className="text-[#1A1A1A]/80 font-medium">{t('radar.legendYou')}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-4 h-4 rounded-full bg-[#3B2314] text-white border border-amber-400 font-bold text-[9px] flex items-center justify-center">☕</span>
-            <span className="text-[#1A1A1A]/90 font-bold">Grupo de Cafés</span>
+            <span className="text-[#1A1A1A]/90 font-bold">{t('radar.legendCoffeeGroup')}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-full bg-[#1A1A1A] border-2 border-[#3B2314] shadow-xs"></span>
-            <span className="text-[#1A1A1A]/80 font-medium">Café Especial</span>
+            <span className="text-[#1A1A1A]/80 font-medium">{t('radar.legendSpecialtyCoffee')}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded-full bg-[#7B1E27] border-2 border-amber-300 shadow-xs"></span>
             <span className="text-[#7B1E27] font-bold flex items-center gap-1">
-              Wi-Fi / Tomadas
+              {t('radar.legendWifiOutlets')}
             </span>
           </div>
         </div>

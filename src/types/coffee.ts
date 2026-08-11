@@ -88,6 +88,7 @@ export interface Degustacao {
   impressoes?: string;        // Alias para observacoes
   ratio?: string;             // Proporção calculada de extração (ex: "1:15.0")
   criadoEm?: string;          // Timestamp ISO de criação
+  isPendingSync?: boolean;    // Se verdadeiro, a degustação foi salva enquanto offline e aguarda sincronização
 }
 
 // Tipo DTO para criação de novos Grãos (sem id e criadoEm)

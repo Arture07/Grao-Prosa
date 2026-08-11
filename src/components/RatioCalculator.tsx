@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Scale, Droplet, Sparkles, RefreshCw, Info, ArrowRightLeft } from 'lucide-react';
 
 interface RatioCalculatorProps {
@@ -6,6 +7,7 @@ interface RatioCalculatorProps {
 }
 
 export const RatioCalculator: React.FC<RatioCalculatorProps> = ({ onApplyRatioToTimer }) => {
+  const { t } = useTranslation();
   const [modoCalculo, setModoCalculo] = useState<'cafeParaAgua' | 'aguaParaCafe'>('cafeParaAgua');
   const [gramasCafeInput, setGramasCafeInput] = useState<number>(18);
   const [volumeAguaInput, setVolumeAguaInput] = useState<number>(270);
@@ -13,11 +15,11 @@ export const RatioCalculator: React.FC<RatioCalculatorProps> = ({ onApplyRatioTo
 
   // Perfis de Ratio Pré-definidos
   const PRESETS_RATIO = [
-    { ratio: 10, rotulo: '1:10', estilo: 'Concentrado', desc: 'Sabor denso e marcante' },
-    { ratio: 12, rotulo: '1:12', estilo: 'Encorpado', desc: 'Prensa Francesa ou Moka' },
-    { ratio: 15, rotulo: '1:15', estilo: 'Proporção Áurea', desc: 'Padrão clássico V60 & Aeropress' },
-    { ratio: 16, rotulo: '1:16', estilo: 'Suave & Floral', desc: 'Destaca acidez e aroma em coados' },
-    { ratio: 18, rotulo: '1:18', estilo: 'Delicado', desc: 'Infusões de corpo leve' },
+    { ratio: 10, rotulo: '1:10', estiloKey: 'tools.presets.concentrated.style', descKey: 'tools.presets.concentrated.desc' },
+    { ratio: 12, rotulo: '1:12', estiloKey: 'tools.presets.fullBodied.style', descKey: 'tools.presets.fullBodied.desc' },
+    { ratio: 15, rotulo: '1:15', estiloKey: 'tools.presets.golden.style', descKey: 'tools.presets.golden.desc' },
+    { ratio: 16, rotulo: '1:16', estiloKey: 'tools.presets.smoothFloral.style', descKey: 'tools.presets.smoothFloral.desc' },
+    { ratio: 18, rotulo: '1:18', estiloKey: 'tools.presets.delicate.style', descKey: 'tools.presets.delicate.desc' },
   ];
 
   // Cálculos Automáticos
@@ -43,13 +45,13 @@ export const RatioCalculator: React.FC<RatioCalculatorProps> = ({ onApplyRatioTo
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#1A1A1A]/10 pb-4 gap-3">
         <div>
           <span className="font-sans text-[10px] uppercase tracking-widest text-[#5A4033] font-semibold block">
-            Calculadora de Proporções (Brew Ratio)
+            {t('tools.ratioCalculator')}
           </span>
           <h3 className="font-serif text-2xl sm:text-3xl font-semibold text-[#1A1A1A]">
-            Proporção Áurea do Café
+            {t('tools.goldenRatio')}
           </h3>
           <p className="font-sans text-xs text-[#1A1A1A]/60 mt-0.5">
-            Ajuste fino da relação entre pó de café (g) e volume de água (ml).
+            {t('tools.ratioSubtitle')}
           </p>
         </div>
 
@@ -59,14 +61,14 @@ export const RatioCalculator: React.FC<RatioCalculatorProps> = ({ onApplyRatioTo
           className="stamped-border bg-[#F5F2ED] hover:bg-black/5 text-[#1A1A1A] px-3.5 py-2 font-sans text-xs uppercase tracking-wider font-medium flex items-center gap-2 transition-all cursor-pointer self-start sm:self-auto"
         >
           <ArrowRightLeft className="w-3.5 h-3.5 text-[#5A4033]" />
-          {modoCalculo === 'cafeParaAgua' ? 'Modo: Café → Água' : 'Modo: Água → Café'}
+          {modoCalculo === 'cafeParaAgua' ? t('tools.modeCoffeeToWater') : t('tools.modeWaterToCoffee')}
         </button>
       </div>
 
       {/* Ratios Pré-definidos (Chips) */}
       <div className="space-y-2">
         <label className="block font-sans text-xs font-bold uppercase tracking-wider text-[#1A1A1A]">
-          Selecione a Proporção Recomendada (Ratio 1:X)
+          {t('tools.selectRecommendedRatio')}
         </label>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           {PRESETS_RATIO.map((item) => {
@@ -86,10 +88,10 @@ export const RatioCalculator: React.FC<RatioCalculatorProps> = ({ onApplyRatioTo
                   {isSelected && <Sparkles className="w-3.5 h-3.5 text-amber-300" />}
                 </div>
                 <p className={`font-sans text-[10px] uppercase tracking-wider mt-1 font-semibold ${isSelected ? 'text-amber-200' : 'text-[#5A4033]'}`}>
-                  {item.estilo}
+                  {t(item.estiloKey)}
                 </p>
                 <p className={`font-sans text-[10px] mt-0.5 opacity-70 line-clamp-1 ${isSelected ? 'text-[#F5F2ED]/80' : 'text-[#1A1A1A]/60'}`}>
-                  {item.desc}
+                  {t(item.descKey)}
                 </p>
               </button>
             );
@@ -102,7 +104,7 @@ export const RatioCalculator: React.FC<RatioCalculatorProps> = ({ onApplyRatioTo
         {/* Campo 1: Café (g) */}
         <div className="space-y-1">
           <label className="font-sans text-xs font-bold uppercase tracking-wider text-[#1A1A1A] flex items-center gap-1.5">
-            <Scale className="w-4 h-4 text-[#5A4033]" /> Pó de Café (Gramas)
+            <Scale className="w-4 h-4 text-[#5A4033]" /> {t('tools.powderAmount')}
           </label>
           {modoCalculo === 'cafeParaAgua' ? (
             <input
@@ -123,7 +125,7 @@ export const RatioCalculator: React.FC<RatioCalculatorProps> = ({ onApplyRatioTo
         {/* Campo 2: Ratio Personalizado */}
         <div className="space-y-1">
           <label className="font-sans text-xs font-bold uppercase tracking-wider text-[#1A1A1A] flex items-center gap-1.5">
-            <RefreshCw className="w-4 h-4 text-[#5A4033]" /> Ratio 1 :
+            <RefreshCw className="w-4 h-4 text-[#5A4033]" /> {t('tools.ratio')}
           </label>
           <div className="flex items-center gap-2">
             <span className="font-serif text-2xl font-bold text-[#1A1A1A]">1 :</span>
@@ -142,7 +144,7 @@ export const RatioCalculator: React.FC<RatioCalculatorProps> = ({ onApplyRatioTo
         {/* Campo 3: Água (ml) */}
         <div className="space-y-1">
           <label className="font-sans text-xs font-bold uppercase tracking-wider text-[#1A1A1A] flex items-center gap-1.5">
-            <Droplet className="w-4 h-4 text-[#5A4033]" /> Água Total (ml)
+            <Droplet className="w-4 h-4 text-[#5A4033]" /> {t('tools.waterMl')}
           </label>
           {modoCalculo === 'aguaParaCafe' ? (
             <input
@@ -169,13 +171,13 @@ export const RatioCalculator: React.FC<RatioCalculatorProps> = ({ onApplyRatioTo
           </div>
           <div>
             <p className="font-sans text-[10px] uppercase tracking-widest text-[#F5F2ED]/60 font-semibold">
-              Resultado da Receita
+              {t('tools.recipeResult')}
             </p>
             <p className="font-serif text-2xl font-semibold leading-tight text-[#F5F2ED]">
-              <strong className="text-amber-300">{cafeFinal}g</strong> de café para <strong className="text-amber-300">{aguaFinal}ml</strong> de água
+              <strong className="text-amber-300">{cafeFinal}g</strong> {t('tools.ofCoffeeFor')} <strong className="text-amber-300">{aguaFinal}ml</strong> {t('tools.ofWater')}
             </p>
             <p className="font-sans text-xs text-[#F5F2ED]/70 mt-0.5">
-              Proporção calculada: 1:{ratioNumerico} • Rendimento estimado: ~{Math.round(aguaFinal * 0.88)}ml na xícara.
+              {t('tools.calculatedRatioSummary', { ratio: ratioNumerico, yieldMl: Math.round(aguaFinal * 0.88) })}
             </p>
           </div>
         </div>
@@ -185,7 +187,7 @@ export const RatioCalculator: React.FC<RatioCalculatorProps> = ({ onApplyRatioTo
             onClick={() => onApplyRatioToTimer(cafeFinal, aguaFinal)}
             className="w-full sm:w-auto bg-[#F5F2ED] hover:bg-white text-[#1A1A1A] px-5 py-3 font-sans text-xs uppercase tracking-widest font-bold transition-all cursor-pointer shrink-0"
           >
-            Aplicar no Cronômetro
+            {t('tools.applyToTimer')}
           </button>
         )}
       </div>
@@ -194,7 +196,7 @@ export const RatioCalculator: React.FC<RatioCalculatorProps> = ({ onApplyRatioTo
       <div className="stamped-border bg-[#F5F2ED]/40 p-4 flex items-start gap-3 text-xs text-[#1A1A1A]/80 font-sans">
         <Info className="w-4 h-4 text-[#5A4033] shrink-0 mt-0.5" />
         <p className="leading-relaxed">
-          <strong>Dica do Barista:</strong> Proporções menores (1:12 - 1:14) resultam em bebidas com corpo mais pesado e acentuada doçura de caramelo. Proporções maiores (1:16 - 1:18) favorecem notas delicadas, acidez málica e florais.
+          <strong>{t('tools.baristaTipTitle')}</strong> {t('tools.baristaTipBody')}
         </p>
       </div>
     </div>

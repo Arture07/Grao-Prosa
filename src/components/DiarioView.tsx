@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Degustacao, Grao } from '../types/coffee';
 import { degustacaoRepository } from '../repositories/degustacaoRepository';
 import { useAuth } from '../hooks/useAuth';
@@ -15,7 +16,8 @@ import {
   Tag,
   FileText,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  WifiOff
 } from 'lucide-react';
 
 interface DiarioViewProps {
@@ -35,6 +37,7 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
   filtroGraoId,
   onClearFiltroGrao
 }) => {
+  const { t } = useTranslation();
   const { uid } = useAuth();
 
   const [listaDegustacoes, setListaDegustacoes] = useState<Degustacao[]>(degustacoesProp || []);
@@ -145,10 +148,10 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-[#1A1A1A]/10 pb-4 gap-2">
         <div>
           <h2 className="font-serif text-3xl font-semibold tracking-tight text-[#1A1A1A]">
-            03. Diário Sensorial
+            {t('journal.title')}
           </h2>
           <p className="font-sans text-[10px] uppercase tracking-[0.2em] opacity-60 mt-0.5">
-            Histórico de degustações e notas de extração
+            {t('journal.subtitle')}
           </p>
         </div>
 
@@ -156,7 +159,7 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
           onClick={onNovaDegustacaoClick}
           className="bg-[#1A1A1A] hover:bg-[#333] text-[#F5F2ED] px-4 py-2 font-sans text-xs uppercase tracking-widest font-medium transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
         >
-          <Coffee className="w-4 h-4" /> Registrar Degustação
+          <Coffee className="w-4 h-4" /> {t('journal.registerTasting')}
         </button>
       </div>
 
@@ -178,7 +181,7 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
         <div className="sm:col-span-2 relative">
           <input
             type="text"
-            placeholder="Buscar por grão, descritores sensoriais ou notas..."
+            placeholder={t('journal.searchPlaceholder')}
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             className="w-full bg-white/80 stamped-border pl-10 pr-4 py-2.5 text-xs font-sans text-[#1A1A1A] focus:outline-none focus:border-[#1A1A1A]"
@@ -210,7 +213,7 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
       ) : degustacoesFiltradas.length === 0 ? (
         <div className="stamped-border p-12 text-center bg-white/30 space-y-3">
           <BookOpen className="w-8 h-8 text-[#5A4033] opacity-40 mx-auto" />
-          <h3 className="font-serif text-2xl text-[#1A1A1A] italic">Nenhum registro encontrado</h3>
+          <h3 className="font-serif text-2xl text-[#1A1A1A] italic">{t('journal.emptyState')}</h3>
           <p className="font-sans text-xs text-[#1A1A1A]/60 max-w-sm mx-auto">
             {busca || metodoFiltro !== 'todos' || filtroGraoId
               ? 'Nenhuma degustação corresponde aos filtros aplicados.'
@@ -245,6 +248,11 @@ export const DiarioView: React.FC<DiarioViewProps> = ({
                         <Calendar className="w-3 h-3" />
                         {d.data || (d.criadoEm ? d.criadoEm.split('T')[0] : '')}
                       </span>
+                      {d.isPendingSync && (
+                        <span className="font-sans text-[10px] font-bold uppercase tracking-widest bg-amber-700 text-white px-2 py-0.5 rounded flex items-center gap-1">
+                          <WifiOff className="w-3 h-3" /> Offline (Pendente)
+                        </span>
+                      )}
                     </div>
 
                     <h3 className="font-serif text-2xl font-semibold text-[#1A1A1A]">

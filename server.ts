@@ -73,7 +73,7 @@ async function startServer() {
   // Soluciona a restrição de CORS e bloqueio do navegador chamando a Overpass API server-side
   app.get('/api/overpass/cafes', async (req, res) => {
     try {
-      const { lat, lng, radius = '15000' } = req.query;
+      const { lat, lng, radius = '5000' } = req.query;
 
       if (
         isSuspectInjection(lat) ||
@@ -89,7 +89,20 @@ async function startServer() {
         });
       }
 
-      const query = `[out:json][timeout:25];(node["amenity"="cafe"](around:${radius},${lat},${lng}););out center;`;
+      const searchRadius = radius ? Math.max(3000, Number(radius)) : 5000;
+      const query = `[out:json][timeout:30];
+(
+  node["amenity"="cafe"](around:${searchRadius},${lat},${lng});
+  node["shop"="coffee"](around:${searchRadius},${lat},${lng});
+  node["shop"="bakery"]["coffee"="yes"](around:${searchRadius},${lat},${lng});
+  way["amenity"="cafe"](around:${searchRadius},${lat},${lng});
+  way["shop"="coffee"](around:${searchRadius},${lat},${lng});
+  way["shop"="bakery"]["coffee"="yes"](around:${searchRadius},${lat},${lng});
+  relation["amenity"="cafe"](around:${searchRadius},${lat},${lng});
+  relation["shop"="coffee"](around:${searchRadius},${lat},${lng});
+  relation["shop"="bakery"]["coffee"="yes"](around:${searchRadius},${lat},${lng});
+);
+out center 300;`;
       
       const endpoints = [
         'https://overpass-api.de/api/interpreter',
@@ -112,6 +125,14 @@ async function startServer() {
           if (osmRes.ok) {
             data = await osmRes.json();
             if (data && Array.isArray(data.elements)) {
+              // Remoção de duplicatas por ID do OpenStreetMap
+              const seenIds = new Set<string>();
+              data.elements = data.elements.filter((el: any) => {
+                const key = el.id ? `${el.type || 'node'}_${el.id}` : null;
+                if (!key || seenIds.has(key)) return false;
+                seenIds.add(key);
+                return true;
+              });
               return res.json(data);
             }
           } else {

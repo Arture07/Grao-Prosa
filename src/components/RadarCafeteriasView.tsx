@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   MapPin, 
   Wifi, 
@@ -26,6 +27,7 @@ interface RadarCafeteriasViewProps {
 export const RadarCafeteriasView: React.FC<RadarCafeteriasViewProps> = ({
   onRegistrarDegustacao
 }) => {
+  const { t } = useTranslation();
   // Hook 1: Localização do Usuário (GPS / Permissões)
   const {
     latitude: userLat,
@@ -65,8 +67,11 @@ export const RadarCafeteriasView: React.FC<RadarCafeteriasViewProps> = ({
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#1A1A1A]/10 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#1A1A1A] font-serif tracking-tight">
-            Radar de Cafeterias
+            {t('radar.title')}
           </h1>
+          <p className="text-xs text-[#1A1A1A]/60 font-sans mt-0.5">
+            {t('radar.subtitle')}
+          </p>
         </div>
 
         {/* Controles de Ação e Alternância de Visão */}
@@ -92,7 +97,7 @@ export const RadarCafeteriasView: React.FC<RadarCafeteriasViewProps> = ({
               }`}
             >
               <MapIcon className="w-3.5 h-3.5 text-[#5A4033]" />
-              Mapa
+              {t('radar.mapView')}
             </button>
             <button
               onClick={() => setModoVisualizacao('lista')}
@@ -103,7 +108,7 @@ export const RadarCafeteriasView: React.FC<RadarCafeteriasViewProps> = ({
               }`}
             >
               <List className="w-3.5 h-3.5 text-[#5A4033]" />
-              Lista ({cafeterias.length})
+              {t('radar.listView')} ({cafeterias.length})
             </button>
           </div>
         </div>
@@ -118,7 +123,7 @@ export const RadarCafeteriasView: React.FC<RadarCafeteriasViewProps> = ({
             </div>
             <div>
               <div className="font-bold text-[#1A1A1A] text-sm">
-                Precisamos da sua localização para encontrar os melhores cafés
+                {t('radar.gpsPermissionRequired')}
               </div>
               <p className="text-[#1A1A1A]/70 text-[11px] mt-0.5">
                 {erroMensagem || 'Ative a localização do seu dispositivo para ver as cafeterias mais próximas no mapa.'}
@@ -132,7 +137,7 @@ export const RadarCafeteriasView: React.FC<RadarCafeteriasViewProps> = ({
             className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-[#3B2314] hover:bg-[#2A180C] text-white rounded-xl font-bold text-xs transition-colors cursor-pointer disabled:opacity-50 shrink-0"
           >
             <Compass className={`w-4 h-4 ${carregandoGps ? 'animate-spin' : ''}`} />
-            {carregandoGps ? 'Obtendo...' : 'Ativar Localização'}
+            {carregandoGps ? 'Obtendo...' : t('radar.enableLocation')}
           </button>
         </div>
       )}
@@ -180,7 +185,7 @@ export const RadarCafeteriasView: React.FC<RadarCafeteriasViewProps> = ({
             }`}
           >
             <Zap className="w-3.5 h-3.5 fill-[#7B1E27]" />
-            Focar / Trabalhar
+            {t('radar.focusWork')}
           </button>
 
           <button
@@ -192,7 +197,7 @@ export const RadarCafeteriasView: React.FC<RadarCafeteriasViewProps> = ({
             }`}
           >
             <Wifi className="w-3.5 h-3.5" />
-            Wi-Fi Grátis
+            {t('radar.freeWifi')}
           </button>
 
           <button
@@ -204,7 +209,7 @@ export const RadarCafeteriasView: React.FC<RadarCafeteriasViewProps> = ({
             }`}
           >
             <Zap className="w-3.5 h-3.5" />
-            Tomadas
+            {t('radar.powerOutlets')}
           </button>
 
           <select
@@ -212,7 +217,7 @@ export const RadarCafeteriasView: React.FC<RadarCafeteriasViewProps> = ({
             onChange={(e) => setFiltroNotaMin(Number(e.target.value))}
             className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white border border-[#1A1A1A]/15 text-[#1A1A1A] cursor-pointer focus:outline-none"
           >
-            <option value={0}>Todas as notas</option>
+            <option value={0}>{t('radar.allRatings')}</option>
             <option value={4.5}>Nota ≥ 4.5 ★</option>
             <option value={4.8}>Nota ≥ 4.8 ★</option>
           </select>
@@ -242,7 +247,7 @@ export const RadarCafeteriasView: React.FC<RadarCafeteriasViewProps> = ({
                   <Navigation className="w-8 h-8" />
                 </div>
                 <h3 className="text-lg font-bold text-[#1A1A1A] font-serif">
-                  Permissão de GPS Necessária
+                  {t('radar.gpsPermissionRequired')}
                 </h3>
                 <p className="text-xs text-[#1A1A1A]/70 max-w-md mt-2 leading-relaxed">
                   {erroMensagem || 'Por favor, autorize o acesso à sua localização no seu navegador ou celular para visualizar o mapa e calcular as rotas exatas.'}
@@ -253,7 +258,7 @@ export const RadarCafeteriasView: React.FC<RadarCafeteriasViewProps> = ({
                   className="mt-5 inline-flex items-center gap-2 px-6 py-3 bg-[#3B2314] hover:bg-[#2A180C] text-white rounded-xl font-bold text-xs transition-all cursor-pointer shadow-md active:scale-95 disabled:opacity-50"
                 >
                   <Compass className={`w-4 h-4 ${carregandoGps ? 'animate-spin' : ''}`} />
-                  {carregandoGps ? 'Obtendo Sinal...' : 'Ativar Localização / Permissão de GPS'}
+                  {carregandoGps ? 'Obtendo Sinal...' : t('radar.enableLocation')}
                 </button>
               </div>
             )
@@ -266,7 +271,7 @@ export const RadarCafeteriasView: React.FC<RadarCafeteriasViewProps> = ({
                     <RefreshCw className="w-6 h-6" />
                   </div>
                   <span className="text-xs font-bold text-[#3B2314] bg-white px-3 py-1 rounded-full shadow-sm border border-[#1A1A1A]/10">
-                    Buscando cafeterias mais próximas...
+                    {t('radar.searchingNearby')}
                   </span>
                 </div>
               )}
@@ -287,9 +292,9 @@ export const RadarCafeteriasView: React.FC<RadarCafeteriasViewProps> = ({
               {/* Prompt card on top of map to select markers */}
               <div className="mt-3 p-3 bg-white rounded-xl border border-[#1A1A1A]/10 text-xs text-[#1A1A1A]/70 flex items-center justify-between">
                 <span>
-                  💡 <strong>Dica:</strong> Clique em um marcador para abrir detalhes e traçar rota no seu GPS.
+                  💡 {t('radar.mapTip')}
                 </span>
-                <span className="font-bold text-[#3B2314]">{cafeterias.length} locais encontrados</span>
+                <span className="font-bold text-[#3B2314]">{cafeterias.length} {t('radar.locationsFound')}</span>
               </div>
             </>
           )}

@@ -1,0 +1,345 @@
+{
+  "header": {
+    "tagline": "Spezialitätenkaffee & Sensorik-Tagebuch",
+    "pantry": "01. Meine Vorratskammer",
+    "tasting": "02. Neue Verkostung",
+    "journal": "03. Sensorik-Tagebuch",
+    "timer": "04. Timer & Verhältnis",
+    "radar": "05. GPS-Radar",
+    "newGrain": "Neuer Kaffee",
+    "installApp": "App Installieren",
+    "addToHomeScreen": "Zum Startbildschirm hinzufügen",
+    "install": "Installieren",
+    "myAccount": "Mein Konto",
+    "accountOptions": "Konto-Optionen",
+    "logout": "Abmelden",
+    "pwaBannerTitle": "Grão & Prosa zum Startbildschirm hinzufügen",
+    "pwaBannerSub": "Greifen Sie mit 1 Klick und im Offline-Modus auf Ihr Kaffee-Tagebuch zu.",
+    "closeWarning": "Hinweis schließen"
+  },
+  "profile": {
+    "title": "Benutzerprofil",
+    "connectedAs": "Angemeldet als:",
+    "deleteAccount": "Mein Konto dauerhaft löschen",
+    "language": "Sprache"
+  },
+  "pantry": {
+    "title": "01. Meine Vorratskammer",
+    "subtitle": "Lokale Lagerverwaltung",
+    "addGrain": "Kaffee Hinzufügen",
+    "registeredGrains": "Registrierte Kaffees",
+    "totalStock": "Gesamtbestand",
+    "criticalStock": "Kritischer Bestand (≤50g)",
+    "criticalPackageSingular": "Packung mit wenig Kaffee",
+    "criticalPackagePlural": "Packungen mit wenig Kaffee",
+    "searchPlaceholder": "Kaffee nach Name, Rösterei oder Herkunft suchen...",
+    "emptySearchTitle": "Kein Kaffee in der Suche gefunden",
+    "emptySearchDesc": "Versuchen Sie andere Suchbegriffe.",
+    "emptyPantryTitle": "Ihre Kaffee-Vorratskammer ist leer",
+    "emptyPantryDesc": "Registrieren Sie Ihre Kaffeelose, um die Restmenge in Gramm zu verfolgen und Zubereitungen im Tagebuch zu erfassen.",
+    "registerFirstBatch": "Erstes Los Registrieren",
+    "origin": "Herkunft",
+    "roast": "Röstung",
+    "viewJournal": "Tagebuch Anzeigen",
+    "ratingSingular": "Bewertung",
+    "ratingPlural": "Bewertungen",
+    "noRating": "K.A.",
+    "remainingAmount": "Verbleibende Menge:",
+    "lowStockWarning": "(Niedrig!)",
+    "rateCoffee": "Diesen Kaffee Bewerten",
+    "editGrain": "Kaffee Bearbeiten",
+    "deleteGrain": "Kaffee Löschen",
+    "deleteModalTitle": "Kaffee aus dem Bestand löschen?",
+    "deleteModalMessage": "Sind Sie sicher, dass Sie diesen Kaffee löschen möchten? Alle damit verbundenen Verkostungen werden ebenfalls aus dem Tagebuch entfernt.",
+    "errorDelete": "Fehler beim Löschen des Kaffees. Bitte versuchen Sie es erneut."
+  },
+  "forms": {
+    "titleAdd": "Zur Vorratskammer Hinzufügen",
+    "titleEdit": "Kaffee Bearbeiten",
+    "subtitle": "Geben Sie die Kaffeelos-Details für Ihren Bestand ein.",
+    "sectionHeader": "Kaffee-Vorratskammer",
+    "coffeeName": "Farm / Kaffeename *",
+    "coffeeNamePlaceholder": "Z.B. Catuaí Amarelo - Sítio da Serra",
+    "roaster": "Rösterei / Marke",
+    "roasterPlaceholder": "Z.B. Coffee Lab / Um Coffee Co.",
+    "origin": "Herkunft / Region",
+    "originPlaceholder": "Z.B. Mantiqueira de Minas - MG",
+    "roastLevel": "Röstgrad",
+    "quantityGrams": "Menge (Gramm) *",
+    "quantityDefault": "Standard: 250g",
+    "cancel": "Abbrechen",
+    "saveGrain": "KAFFEE SPEICHERN",
+    "updateGrain": "KAFFEE AKTUALISIEREN",
+    "saving": "SPEICHERN...",
+    "errNameRequired": "Bitte geben Sie die Farm oder den Kaffeenamen ein.",
+    "errQuantityInvalid": "Bitte geben Sie eine gültige Menge in Gramm ein (z. B. 250).",
+    "errFirebaseSave": "Fehler beim Verbinden mit der Cloud-Datenbank. Bitte versuchen Sie es erneut."
+  },
+  "common": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "loading": "Laden...",
+    "close": "Schließen"
+  },
+  "journal": {
+    "title": "03. Sensorik-Tagebuch",
+    "subtitle": "Ihre Bewertungen und Verkostungsnotizen",
+    "registerTasting": "Verkostung Registrieren",
+    "searchPlaceholder": "Im Tagebuch suchen...",
+    "method": "Methode:",
+    "rating": "Bewertung:",
+    "emptyState": "Keine Verkostungen gefunden."
+  },
+  "tastingForm": {
+    "title": "Neue Verkostung",
+    "selectGrain": "Kaffee Auswählen",
+    "extractionMethod": "Zubereitungsmethode (Z.B. V60, Espresso)",
+    "rating": "Bewertung (0 bis 5)",
+    "sensoryNotesPlaceholder": "Bewertung und Geschmacksnotizen...",
+    "cancel": "Abbrechen",
+    "saveTasting": "Verkostung Speichern"
+  },
+  "radar": {
+    "tagline": "05. GPS-Radar",
+    "title": "Café-Radar",
+    "subtitle": "Finden Sie Spezialitätenkaffee in Ihrer Nähe",
+    "mapView": "Karte",
+    "listView": "Liste",
+    "focusWork": "Fokussieren / Arbeiten",
+    "freeWifi": "Kostenloses WLAN",
+    "powerOutlets": "Steckdosen",
+    "allRatings": "Alle Bewertungen",
+    "locationsFound": "Orte gefunden",
+    "gpsPermissionRequired": "GPS-Berechtigung Erforderlich",
+    "searchingNearby": "Suche nach nahegelegenen Cafés...",
+    "enableLocation": "Standort Aktivieren",
+    "mapTip": "Tipp: Klicken Sie auf eine Markierung, um Details zu öffnen und die Route in Ihrem GPS zu planen.",
+    "legendYou": "Sie",
+    "legendCoffeeGroup": "Kaffeegruppe",
+    "legendSpecialtyCoffee": "Spezialitätenkaffee",
+    "legendWifiOutlets": "WLAN / Steckdosen"
+  },
+  "tools": {
+    "title": "04. Timer & Brühverhältnis",
+    "subtitle": "Gießanleitungen, Phasen und Barista-Rechner",
+    "proportionLabel": "VERHÄLTNIS:",
+    "extractionTime": "Brühzeit",
+    "start": "Starten",
+    "pause": "Pausieren",
+    "reset": "Zurücksetzen",
+    "recipes": "Rezepte",
+    "ratioCalculator": "Verhältnis-Rechner",
+    "powderAmount": "Kaffeemenge (g)",
+    "ratio": "Verhältnis (1:X)",
+    "waterMl": "Wasser (ml)",
+    "yieldMl": "Ausbeute (ml)",
+    "recipeList": "Rezepte",
+    "stagesTitle": "Brühschritte (5 Phasen)",
+    "stageNumber": "Schritt {{current}} von {{total}}",
+    "pourUntil": "Gießen bis:",
+    "targetWater": "Zielwasser",
+    "soundVibrationOn": "Ton & Vibration AN",
+    "soundVibrationOff": "Ton & Vibration AUS",
+    "estimatedTotalTime": "Geschätzte Gesamtzeit:",
+    "step": "Schritt",
+    "of": "von",
+    "accumulated": "kumuliert",
+    "registerExtractionInJournal": "Diesen Brühvorgang im Tagebuch eintragen",
+    "calculatedTotalWater": "Berechnetes Gesamtwasser:",
+    "doseWaterRatio": "Dosis: {{dose}}g Kaffee • Wasser: {{water}}ml",
+    "ratioLabel": "Verhältnis:",
+    "goldenRatio": "Goldener Schnitt des Kaffees",
+    "ratioSubtitle": "Feineinstellung des Verhältnisses zwischen Kaffeemehl (g) und Wasservolumen (ml).",
+    "modeCoffeeToWater": "Modus: Kaffee → Wasser",
+    "modeWaterToCoffee": "Modus: Wasser → Kaffee",
+    "selectRecommendedRatio": "Empfohlenes Verhältnis auswählen (Ratio 1:X)",
+    "recipeResult": "Rezept-Ergebnis",
+    "ofCoffeeFor": "Kaffee für",
+    "ofWater": "Wasser",
+    "calculatedRatioSummary": "Berechnetes Verhältnis: 1:{{ratio}} • Geschätzter Ertrag: ~{{yieldMl}}ml in der Tasse.",
+    "applyToTimer": "Auf Timer anwenden",
+    "baristaTipTitle": "Barista-Tipp:",
+    "baristaTipBody": "Kleine Verhältnisse (1:12 - 1:14) führen zu Getränken mit schwererem Körper und ausgeprägter Karamellsüße. Höhere Verhältnisse (1:16 - 1:18) bevorzugen feine, apfelsaure und blumige Noten.",
+    "presets": {
+      "concentrated": { "style": "Konzentriert", "desc": "Dichter und kräftiger Geschmack" },
+      "fullBodied": { "style": "Vollmundig", "desc": "Stempelkanne oder Moka" },
+      "golden": { "style": "Goldener Schnitt", "desc": "Klassischer V60 & Aeropress Standard" },
+      "smoothFloral": { "style": "Sanft & Blumig", "desc": "Betont Säure und Aroma beim Handfilter" },
+      "delicate": { "style": "Fein", "desc": "Leichte Aufgüsse" }
+    }
+  },
+  "recipes": {
+    "v60-46": {
+      "name": "V60 — 4:6 Methode (Tetsu Kasuya)",
+      "description": "Weltmeister-Methode des World Brewers Cup. Teilt 40% des Wassers für Säure/Süße und 60% für den Körper.",
+      "steps": {
+        "e1": {
+          "name": "Bloom (Vorbrühen)",
+          "instruction": "Gießen Sie 60ml Wasser in kreisenden Bewegungen, um CO2-Gase freizusetzen."
+        },
+        "e2": {
+          "name": "Aufguss 1 (Süße & Säure)",
+          "instruction": "Gießen Sie bis zu 120ml insgesamt. Fester Aufguss in der Mitte."
+        },
+        "e3": {
+          "name": "Aufguss 2 (Körper)",
+          "instruction": "Gießen Sie bis zu 180ml insgesamt. Halten Sie einen stetigen Fluss aufrecht."
+        },
+        "e4": {
+          "name": "Aufguss 3 (Balance)",
+          "instruction": "Gießen Sie bis zu 240ml insgesamt."
+        },
+        "e5": {
+          "name": "Finaler Aufguss & Ablauf",
+          "instruction": "Gießen Sie bis zu 300ml. Warten Sie, bis das Wasser vollständig abgelaufen ist."
+        }
+      }
+    },
+    "aeropress-invertido": {
+      "name": "Aeropress — Invertierte Standardmethode",
+      "description": "Schnelle Immersions-Extraktion gefolgt von manueller Druckfiltrierung.",
+      "steps": {
+        "a1": {
+          "name": "Schneller Bloom",
+          "instruction": "Gießen Sie 60ml kochendes Wasser (92°C) ein und rühren Sie 10 Sekunden lang sanft um."
+        },
+        "a2": {
+          "name": "Vollständiges Auffüllen",
+          "instruction": "Gießen Sie das restliche Wasser bis 224ml ein. Bringen Sie den Filterdeckel an."
+        },
+        "a3": {
+          "name": "Stempel drücken",
+          "instruction": "Drehen Sie die Aeropress auf die Tasse und drücken Sie den Stempel 30s lang sanft nach unten."
+        }
+      }
+    },
+    "prensa-francesa": {
+      "name": "Stempelkanne — Hoffmann-Methode",
+      "description": "Saubere und vollmundige Methode ohne Sedimentbitterkeit, popularisiert von James Hoffmann.",
+      "steps": {
+        "p1": {
+          "name": "Direkte Gesamtaufguss",
+          "instruction": "Gießen Sie schnell 320ml kochendes Wasser ein. Warten Sie 4 Minuten."
+        },
+        "p2": {
+          "name": "Kruste brechen & Rühren",
+          "instruction": "Rühren Sie die Kruste mit einem Löffel sanft um, damit das Kaffeemehl sinkt."
+        },
+        "p3": {
+          "name": "Finale Dekantierung",
+          "instruction": "Warten Sie, bis sich Öle und Partikel absetzen. Setzen Sie den Stempel oben auf."
+        }
+      }
+    },
+    "chemex-suave": {
+      "name": "Chemex — Eleganter Glasfilter",
+      "description": "Saubere Extraktion mit dickerem Papierfilter, betont blumige und fruchtige Noten.",
+      "steps": {
+        "c1": {
+          "name": "Erweiterter Bloom",
+          "instruction": "Gießen Sie 75ml Wasser ein und warten Sie auf das Aufquellen des Kaffeebetts."
+        },
+        "c2": {
+          "name": "Hauptaufguss 1",
+          "instruction": "Gießen Sie langsam im Kreis, bis Sie 200ml erreichen."
+        },
+        "c3": {
+          "name": "Hauptaufguss 2 & Ablauf",
+          "instruction": "Vervollständigen Sie bis zu 400ml Wasser. Lassen Sie die Flüssigkeit ablaufen."
+        }
+      }
+    }
+  },
+  "descriptors": {
+    "Frutado": "Fruchtig",
+    "Achocolatado": "Schokoladig",
+    "Cítrico": "Zitrusartig",
+    "Floral": "Blumig",
+    "Caramelo": "Karamell",
+    "Nozes / Castanhas": "Nüsse / Kastanien",
+    "Especiarias": "Gewürze",
+    "Mel": "Honig",
+    "Vinado / Fermentado": "Weinartig / Fermentiert",
+    "Amêndoa": "Mandel",
+    "Cacau Amargo": "Bitternote Kakao",
+    "Rapadura": "Vollrohrzucker",
+    "Baunilha": "Vanille",
+    "Frutas Vermelhas": "Rote Beeren",
+    "Frutas Amarelas": "Gelbe Früchte",
+    "Herbal / Chá": "Kräuter / Tee",
+    "Nobre": "Edel",
+    "Caramelizado": "Karamellisiert",
+    "Castanhas": "Nüsse",
+    "frutado": "Fruchtig",
+    "achocolatado": "Schokoladig",
+    "cítrico": "Zitrusartig",
+    "floral": "Blumig",
+    "caramelo": "Karamell",
+    "nozes / castanhas": "Nüsse / Kastanien",
+    "especiarias": "Gewürze",
+    "mel": "Honig",
+    "vinado / fermentado": "Weinartig / Fermentiert",
+    "amêndoa": "Mandel",
+    "cacau amargo": "Bitternote Kakao",
+    "rapadura": "Vollrohrzucker",
+    "baunilha": "Vanille",
+    "frutas vermelhas": "Rote Beeren",
+    "frutas amarelas": "Gelbe Früchte",
+    "herbal / chá": "Kräuter / Tee"
+  },
+  "tastingForm": {
+    "title": "Neue Verkostung",
+    "subtitle": "Erfassen Sie Brühparameter und sensorische Deskriptoren der Extraktion.",
+    "back": "Zurück",
+    "rating_1": "Schlecht",
+    "rating_2": "Akzeptabel",
+    "rating_3": "Gut",
+    "rating_4": "Sehr Gut",
+    "rating_5": "Unvergesslich",
+    "selectGrain": "Kaffee Auswählen",
+    "extractionMethod": "Zubereitungsmethode (Z.B. V60, Espresso)",
+    "rating": "Bewertung (0 bis 5)",
+    "sensoryNotesPlaceholder": "Bewertung und Geschmacksnotizen...",
+    "cancel": "Abbrechen",
+    "saveTasting": "Verkostung Speichern",
+    "preparationMethod": "Zubereitungsmethode",
+    "preparationDate": "Zubereitungsdatum",
+    "ratingLabel": "Bewertung (0 bis 5)",
+    "sensoryDescriptorsTitle": "4. Sensorische Deskriptoren",
+    "recipeParamsTitle": "5. Rezeptparameter & Abzug",
+    "doseG": "Dosis (g)",
+    "waterMl": "Wasser (ml)",
+    "extractedRatio": "Extrahiertes Verhältnis",
+    "realtimeRatio": "Echtzeit-Verhältnis Kaffee x Wasser",
+    "deductInventory": "Automatisch vom Bestand abbuchen",
+    "deductDescription": "{{dose}}g von der verfügbaren Chargenmenge abziehen.",
+    "deductInventoryDesc": "{{dose}}g von der verfügbaren Chargenmenge abziehen.",
+    "infusionNotes": "Aufgussnotizen & Beobachtungen",
+    "allMethods": "Alle Methoden",
+    "addNewDescriptorPlaceholder": "Neuen Deskriptor hinzufügen...",
+    "addDescriptorButton": "+ Hinzufügen",
+    "ratioLabel": "Verhältnis:"
+  },
+  "profile": {
+    "title": "Benutzerprofil",
+    "connectedAs": "Angemeldet als:",
+    "myAccount": "Mein Konto",
+    "language": "Sprache",
+    "memberSince": "Mitglied seit",
+    "logout": "Abmelden",
+    "deleteAccountPermanent": "Mein Konto dauerhaft löschen",
+    "changePassword": "Passwort ändern",
+    "sendResetEmailPrompt": "Passwort-Reset-E-Mail senden?",
+    "resetEmailSent": "Zurücksetzungs-E-Mail gesendet!",
+    "confirm": "Bestätigen",
+    "cancel": "Abbrechen"
+  },
+  "modals": {
+    "areYouSure": "Sind Sie sicher?",
+    "cannotBeUndone": "Diese Aktion kann nicht rückgängig gemacht werden.",
+    "delete": "Löschen",
+    "cancel": "Abbrechen",
+    "viewRoute": "Route anzeigen",
+    "close": "Schließen"
+  }
+}

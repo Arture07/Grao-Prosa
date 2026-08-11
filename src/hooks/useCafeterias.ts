@@ -44,7 +44,7 @@ function formatOsmAddress(tags: Record<string, string> | undefined): string {
 export async function fetchNearbyCafes(
   lat: number | null | undefined,
   lng: number | null | undefined,
-  radiusMeters: number = 15000
+  radiusMeters: number = 5000
 ): Promise<Cafeteria[]> {
   // 1. Validação do GPS: se não houver localização válida do usuário, não busca no Overpass
   if (
@@ -78,12 +78,21 @@ export async function fetchNearbyCafes(
       return getFallbackCafeterias(lat, lng);
     }
 
-    // 2. Blocklist para remover estabelecimentos indesejados (sorveterias, docerias, açaís, etc.)
+    // 2. Remoção de duplicatas pelo ID do OpenStreetMap
+    const seenIds = new Set<string>();
+    const elementosUnicos = data.elements.filter((element: any) => {
+      const idKey = element.id ? `${element.type || 'node'}_${element.id}` : null;
+      if (!idKey || seenIds.has(idKey)) return false;
+      seenIds.add(idKey);
+      return true;
+    });
+
+    // 3. Blocklist para remover estabelecimentos indesejados (sorveterias, docerias, açaís, etc.)
     const blocklist = [
       "freddo", "sorvete", "sorveteria", "gelato", "gelateria", "açaí", "acai", "chocolate", "doceria", "bolos"
     ];
 
-    const elementosFiltrados = data.elements.filter((element: any) => {
+    const elementosFiltrados = elementosUnicos.filter((element: any) => {
       const nome = element.tags?.name || '';
       if (!nome) return true;
       const nomeLower = nome.toLowerCase();
@@ -94,38 +103,42 @@ export async function fetchNearbyCafes(
       return getFallbackCafeterias(lat, lng);
     }
 
-    // 3. Mapeamento final para a estrutura do app
-    return elementosFiltrados.map((element: any) => {
-      const elementLat = element.lat;
-      const elementLng = element.lon;
-      const distKm = calcularDistanciaHaversineKm(lat, lng, elementLat, elementLng);
-      const endereco = formatOsmAddress(element.tags);
+    // 4. Mapeamento final para a estrutura do app com suporte a nodes, ways e relations
+    return elementosFiltrados
+      .map((element: any) => {
+        const elementLat = element.lat ?? element.center?.lat;
+        const elementLng = element.lon ?? element.center?.lon;
+        if (!elementLat || !elementLng) return null;
 
-      const internetAccess = element.tags?.['internet_access'];
-      const temWifi = internetAccess === 'wlan' || internetAccess === 'yes' || internetAccess === 'terminal';
+        const distKm = calcularDistanciaHaversineKm(lat, lng, elementLat, elementLng);
+        const endereco = formatOsmAddress(element.tags);
 
-      const socketTag = element.tags?.['socket'];
-      const hasCapacitySockets = element.tags?.['capacity:sockets'] !== undefined;
-      const temTomadas = socketTag === 'yes' || socketTag !== undefined || hasCapacitySockets || element.tags?.['power'] !== undefined;
+        const internetAccess = element.tags?.['internet_access'];
+        const temWifi = internetAccess === 'wlan' || internetAccess === 'yes' || internetAccess === 'terminal';
 
-      return {
-        id: element.id.toString(),
-        nome: element.tags?.name || 'Cafeteria Local',
-        latitude: elementLat,
-        longitude: elementLng,
-        endereco: endereco,
-        bairro: element.tags?.['addr:suburb'] || element.tags?.['addr:neighbourhood'] || undefined,
-        nota: null,
-        totalAvaliacoes: 0,
-        temWifi: temWifi,
-        temTomadas: temTomadas,
-        descricao: `Cafeteria cadastrada no OpenStreetMap (ID: ${element.id}).`,
-        especialidades: element.tags?.['cuisine'] ? [element.tags['cuisine']] : ['Café Especial', 'Espresso'],
-        horarioFuncionamento: element.tags?.['opening_hours'] || 'Consulte no local',
-        distanciaKm: distKm,
-        origemOSM: true
-      };
-    });
+        const socketTag = element.tags?.['socket'];
+        const hasCapacitySockets = element.tags?.['capacity:sockets'] !== undefined;
+        const temTomadas = socketTag === 'yes' || socketTag !== undefined || hasCapacitySockets || element.tags?.['power'] !== undefined;
+
+        return {
+          id: `${element.type || 'node'}_${element.id}`,
+          nome: element.tags?.name || 'Cafeteria Local',
+          latitude: elementLat,
+          longitude: elementLng,
+          endereco: endereco,
+          bairro: element.tags?.['addr:suburb'] || element.tags?.['addr:neighbourhood'] || undefined,
+          nota: null,
+          totalAvaliacoes: 0,
+          temWifi: temWifi,
+          temTomadas: temTomadas,
+          descricao: `Cafeteria cadastrada no OpenStreetMap (ID: ${element.id}).`,
+          especialidades: element.tags?.['cuisine'] ? [element.tags['cuisine']] : ['Café Especial', 'Espresso'],
+          horarioFuncionamento: element.tags?.['opening_hours'] || 'Consulte no local',
+          distanciaKm: distKm,
+          origemOSM: true
+        };
+      })
+      .filter((c): c is Cafeteria => c !== null);
 
   } catch (err: unknown) {
     console.warn('[Overpass API Fetch Warning] Falha na requisição ao Overpass. Usando fallback suave:', err);
@@ -367,7 +380,7 @@ export function useCafeterias(userLat: number | null, userLng: number | null) {
     const requestId = ++batchRequestIdRef.current;
 
     try {
-      const resultados = await fetchNearbyCafes(lat, lng, 15000);
+      const resultados = await fetchNearbyCafes(lat, lng, 5000);
       if (requestId !== batchRequestIdRef.current) return;
 
       // Ordena cafeterias por distância para pegar os 15 mais próximos do usuário
